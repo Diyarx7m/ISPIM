@@ -1665,5 +1665,742 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
       legal_status: "Their territorial wetlands are recognized as a UNESCO World Heritage site and protected reserve, though climate change and upstream damming continue to pose severe water supply crises.",
       population_projection_2026: "515,000 (Battling active climate desalination of the marshes)"
     }
+  },
+  // --- ADDITIONAL CELTIC FAMILY ---
+  {
+    id: "welsh",
+    family_id: "indo_european_celtic",
+    familyName: "Indo-European Celtic Family",
+    name: "Welsh (Cymry)",
+    region: "Europe",
+    category: "Indigenous",
+    location: { latitude: 52.3, longitude: -3.8 },
+    population_count: 3100000,
+    color_hex: "#10B981",
+    gradient_specs: "linear-gradient(135deg, #10B981, #047857)",
+    metadata: {
+      summary: "A Celtic nation native to Wales, renowned for highly successful linguistic restoration of the Welsh language ('Cymraeg'), continuous choral arts festivals, and deep industrial heritage.",
+      language_family: "Indo-European (Brittonic Celtic)",
+      legal_status: "Constituent nation within the UK. Welsh language holds official equal-status legal protection under public administration guidelines.",
+      population_projection_2026: "3,150,000 (Sustained active bilingual school growth)"
+    }
+  },
+  {
+    id: "bretons",
+    family_id: "indo_european_celtic",
+    familyName: "Indo-European Celtic Family",
+    name: "Bretons (Breizhiz)",
+    region: "Europe",
+    category: "Indigenous",
+    location: { latitude: 48.2, longitude: -3.0 },
+    population_count: 200000,
+    color_hex: "#10B981",
+    gradient_specs: "linear-gradient(135deg, #34D399, #065F46)",
+    metadata: {
+      summary: "Celtic ethnic group native to Brittany, France. Descendants of British migrants, they maintain the only mainland Brittonic-Celtic tongue and legendary coastal folk dancing ceremonies.",
+      language_family: "Indo-European (Brittonic Celtic)",
+      legal_status: "Regional minority group in France with minimal official linguistic status; supported locally via independent Diwan immersion networks.",
+      population_projection_2026: "205,000 (Actively restoring endangered cultural registers)"
+    }
+  },
+  {
+    id: "manx",
+    family_id: "indo_european_celtic",
+    familyName: "Indo-European Celtic Family",
+    name: "Manx",
+    region: "Europe",
+    category: "Indigenous",
+    location: { latitude: 54.2, longitude: -4.5 },
+    population_count: 85000,
+    color_hex: "#10B981",
+    gradient_specs: "linear-gradient(135deg, #059669, #022C22)",
+    metadata: {
+      summary: "Celtic island nation native to the Isle of Man. Governed under Tynwald, the oldest continuous parliament, they successfully revived the Manx language from near extinction.",
+      language_family: "Indo-European (Goidelic Celtic)",
+      legal_status: "British Crown Dependency with complete legislative autonomy. Manx is legally recognized under European minority protection covenants.",
+      population_projection_2026: "86,200 (Active expansion of public bilingual services)"
+    }
+  },
+  {
+    id: "cornish",
+    family_id: "indo_european_celtic",
+    familyName: "Indo-European Celtic Family",
+    name: "Cornish",
+    region: "Europe",
+    category: "Indigenous",
+    location: { latitude: 50.4, longitude: -4.7 },
+    population_count: 530000,
+    color_hex: "#10B981",
+    gradient_specs: "linear-gradient(135deg, #6EE7B7, #064E3B)",
+    metadata: {
+      summary: "Celtic native minority of Cornwall, Great Britain. Famed for deep-tin mining and coastal angling folklore, currently battling second-home gentrification.",
+      language_family: "Indo-European (Brittonic Celtic)",
+      legal_status: "Officially recognized national minority in the UK since 2014, although lacking devolved territorial self-rule.",
+      population_projection_2026: "535,000 (Organizing community land-trusts against holiday gentrification)"
+    }
+  },
+  {
+    id: "scots_gaels",
+    family_id: "indo_european_celtic",
+    familyName: "Indo-European Celtic Family",
+    name: "Scottish Gaels",
+    region: "Europe",
+    category: "Indigenous",
+    location: { latitude: 57.5, longitude: -5.5 },
+    population_count: 60000,
+    color_hex: "#10B981",
+    gradient_specs: "linear-gradient(135deg, #16A34A, #14532D)",
+    metadata: {
+      summary: "Goidelic Celtic population native to the Highlands and Hebrides. Conserving outstanding epic oral poems, bagpipes, and highland communal crofting land-use systems.",
+      language_family: "Indo-European (Goidelic Celtic)",
+      legal_status: "Constitutionally recognized national minority language under the Gaelic Language (Scotland) Act 2005.",
+      population_projection_2026: "59,000 (Consolidating island cooperative farming clusters)"
+    }
+  },
+  // --- GERMANIC FAMILY ---
+  {
+    id: "faroese",
+    family_id: "indo_european_germanic",
+    familyName: "Indo-European Germanic Family",
+    name: "Faroese",
+    region: "Europe",
+    category: "Indigenous",
+    location: { latitude: 62.0, longitude: -6.9 },
+    population_count: 53000,
+    color_hex: "#3B82F6",
+    gradient_specs: "linear-gradient(135deg, #3B82F6, #1E3A8A)",
+    metadata: {
+      summary: "North Germanic island nation native to the Faroe Islands. Descendants of Norse voyagers, they maintain an absolute Faroese linguistic domain and non-commercial food cooperatives.",
+      language_family: "Indo-European (North Germanic)",
+      legal_status: "Self-governing nation within major Danish commonwealth structures, holding independent policy over fishing and borders.",
+      population_projection_2026: "54,800 (Absolute linguistic domain stable)"
+    }
+  },
+  {
+    id: "frisians",
+    family_id: "indo_european_germanic",
+    familyName: "Indo-European Germanic Family",
+    name: "Frisians",
+    region: "Europe",
+    category: "Indigenous",
+    location: { latitude: 53.2, longitude: 5.8 },
+    population_count: 650000,
+    color_hex: "#3B82F6",
+    gradient_specs: "linear-gradient(135deg, #60A5FA, #1D4ED8)",
+    metadata: {
+      summary: "Germanic coastlanders of Wadden Sea wetlands. Living across Netherlands/Germany borders, they preserve distinct dyke-building custom systems and regional sports.",
+      language_family: "Indo-European (West Germanic)",
+      legal_status: "Frysk is recognized as an official administrative language in Friesland, Netherlands, with regional protections.",
+      population_projection_2026: "648,000 (Battling industrial erosion of coastal biosphere reserves)"
+    }
+  },
+  // --- ROMANCE FAMILY ---
+  {
+    id: "ladins",
+    family_id: "indo_european_romance",
+    familyName: "Indo-European Romance Family",
+    name: "Ladins",
+    region: "Europe",
+    category: "Indigenous",
+    location: { latitude: 46.5, longitude: 11.8 },
+    population_count: 30000,
+    color_hex: "#F59E0B",
+    gradient_specs: "linear-gradient(135deg, #F59E0B, #B45309)",
+    metadata: {
+      summary: "Rhaeto-Romance mountain group native to Dolomite valleys. Preserving ancient timber architecture and Ladin language, a rustic Latin variant with Celtic influences.",
+      language_family: "Indo-European (Rhaeto-Romance)",
+      legal_status: "Fully protected under Italian provincial autonomy structures, with mandatory trilingual school curricula.",
+      population_projection_2026: "30,500 (Demographics stable within alpine communities)"
+    }
+  },
+  {
+    id: "aromanians",
+    family_id: "indo_european_romance",
+    familyName: "Indo-European Romance Family",
+    name: "Aromanians",
+    region: "Europe",
+    category: "Indigenous",
+    location: { latitude: 40.5, longitude: 21.0 },
+    population_count: 250000,
+    color_hex: "#F59E0B",
+    gradient_specs: "linear-gradient(135deg, #FBBF24, #92400E)",
+    metadata: {
+      summary: "Balkan micro-ethnic group residing across Greece and Albania. Originally transhumant alpine shepherds, they maintain an invaluable Romance tongue and stone town legacies.",
+      language_family: "Indo-European (Eastern Romance)",
+      legal_status: "Varying recognition; constitutional status in North Macedonia, but un-demarcated in adjacent southern states.",
+      population_projection_2026: "243,000 (Actively organizing independent bilingual schools)"
+    }
+  },
+  {
+    id: "corsicans",
+    family_id: "indo_european_romance",
+    familyName: "Indo-European Romance Family",
+    name: "Corsicans",
+    region: "Europe",
+    category: "Indigenous",
+    location: { latitude: 42.1, longitude: 9.1 },
+    population_count: 330000,
+    color_hex: "#F59E0B",
+    gradient_specs: "linear-gradient(135deg, #D97706, #78350F)",
+    metadata: {
+      summary: "Indigenous island inhabitants of Corsica. They represent a historic egalitarian clan structure, chestnut forest culture, and epic polyphonic musical styles.",
+      language_family: "Indo-European (Italo-Dalmatian)",
+      legal_status: "Holds special territorial configuration in France, but official dual-language status has been repeatedly rejected.",
+      population_projection_2026: "336,000 (Resisting coastal private real-estate over-development)"
+    }
+  },
+  {
+    id: "friulians",
+    family_id: "indo_european_romance",
+    familyName: "Indo-European Romance Family",
+    name: "Friulians",
+    region: "Europe",
+    category: "Indigenous",
+    location: { latitude: 46.2, longitude: 13.0 },
+    population_count: 600000,
+    color_hex: "#F59E0B",
+    gradient_specs: "linear-gradient(135deg, #F59E0B, #3E2723)",
+    metadata: {
+      summary: "Ethno-linguistic community native to Friuli, Italy. They preserve Friulian, distinct alpine wine guilds, and unique mountain masonry skills.",
+      language_family: "Indo-European (Rhaeto-Romance)",
+      legal_status: "Linguistically recognized and protected under national minority laws, but lacking structural local school support.",
+      population_projection_2026: "592,000 (Strong regional publisher and identity preservation networks)"
+    }
+  },
+  // --- ALBANIAN ISOLATE ---
+  {
+    id: "arbereshe",
+    family_id: "indo_european_albanian",
+    familyName: "Indo-European Albanian Family",
+    name: "Arbëreshë",
+    region: "Europe",
+    category: "Indigenous",
+    location: { latitude: 39.5, longitude: 16.2 },
+    population_count: 10000,
+    color_hex: "#F59E0B",
+    gradient_specs: "linear-gradient(135deg, #F0ABFC, #86198F)",
+    metadata: {
+      summary: "Albanian-origin community inhabiting remote Calabrian hills since the 15th century. They retain Byzantine liturgical rites and splendid gold-weaved silk dresses.",
+      language_family: "Indo-European (Albanian Tosk)",
+      legal_status: "Italian statutory minority protection, but facing acute youth exodus to northern industrial centers.",
+      population_projection_2026: "9,600 (Digitally cataloging archaic Tosk linguistic variants)"
+    }
+  },
+  // --- SLAVIC FAMILY ---
+  {
+    id: "sorbs",
+    family_id: "indo_european_slavic",
+    familyName: "Indo-European Slavic Family",
+    name: "Sorbs",
+    region: "Europe",
+    category: "Indigenous",
+    location: { latitude: 51.2, longitude: 14.3 },
+    population_count: 60000,
+    color_hex: "#8B5CF6",
+    gradient_specs: "linear-gradient(135deg, #8B5CF6, #5B21B6)",
+    metadata: {
+      summary: "West Slavic group of Lusatia, Germany. Preserving Upper and Lower Sorbian enclaves, historic equestrian Easter rides, and legendary water folklore.",
+      language_family: "Indo-European (West Slavic)",
+      legal_status: "Fully protected national minority in Saxony and Brandenburg, with statutory funding and bilingual schools.",
+      population_projection_2026: "58,200 (Stable community backing under regional cultural funds)"
+    }
+  },
+  {
+    id: "kashubians",
+    family_id: "indo_european_slavic",
+    familyName: "Indo-European Slavic Family",
+    name: "Kashubians",
+    region: "Europe",
+    category: "Indigenous",
+    location: { latitude: 54.3, longitude: 18.0 },
+    population_count: 230000,
+    color_hex: "#8B5CF6",
+    gradient_specs: "linear-gradient(135deg, #A78BFA, #4C1D95)",
+    metadata: {
+      summary: "West Slavic community of Polish Pomerania. Famed for Baltic coastal small-lake fishing, colorful floral textile motifs, and snuff-using customary structures.",
+      language_family: "Indo-European (West Slavic)",
+      legal_status: "Officially registered as Poland's only regional language status, allowing bilingual school graduation certifications.",
+      population_projection_2026: "228,000 (Stable rural linguistic enclaves)"
+    }
+  },
+  {
+    id: "pomaks",
+    family_id: "indo_european_slavic",
+    familyName: "Indo-European Slavic Family",
+    name: "Pomaks",
+    region: "Europe",
+    category: "Indigenous",
+    location: { latitude: 41.6, longitude: 24.5 },
+    population_count: 200000,
+    color_hex: "#8B5CF6",
+    gradient_specs: "linear-gradient(135deg, #8B5CF6, #2E1065)",
+    metadata: {
+      summary: "Muslim West-Slavic highlanders of the Rhodope Mountains. Developed a highly isolated culture merging South Slavic dialects with Islamic customs and mountain farming.",
+      language_family: "Indo-European (South Slavic)",
+      legal_status: "Protected under Greek Muslim treaty clauses; facing historic, forced name-changing and integration in Bulgaria.",
+      population_projection_2026: "197,000 (Fostering high mountain honey and ecological agriculture)"
+    }
+  },
+  {
+    id: "rusyns",
+    family_id: "indo_european_slavic",
+    familyName: "Indo-European Slavic Family",
+    name: "Rusyns",
+    region: "Europe",
+    category: "Indigenous",
+    location: { latitude: 48.8, longitude: 22.2 },
+    population_count: 1500000,
+    color_hex: "#8B5CF6",
+    gradient_specs: "linear-gradient(135deg, #C084FC, #581C87)",
+    metadata: {
+      summary: "East Slavic minority native to Carpato-alpine zones. Creators of unique multi-domed timber churches and high-altitude sheep pastoralism structures.",
+      language_family: "Indo-European (East Slavic)",
+      legal_status: "Statutorily recognized in Slovakia, Poland, and Serbia, but unlabeled within Ukraine's territory.",
+      population_projection_2026: "1,470,000 (Active transatlantic cultural councils)"
+    }
+  },
+  {
+    id: "silesians",
+    family_id: "indo_european_slavic",
+    familyName: "Indo-European Slavic Family",
+    name: "Silesians",
+    region: "Europe",
+    category: "Indigenous",
+    location: { latitude: 50.3, longitude: 19.0 },
+    population_count: 800000,
+    color_hex: "#8B5CF6",
+    gradient_specs: "linear-gradient(135deg, #A78BFA, #3B0764)",
+    metadata: {
+      summary: "West Slavic group in Silesian industrial borderlands. They hold a distinct dialect carrying Germanic elements and struggle for official recognition in Poland.",
+      language_family: "Indo-European (West Slavic)",
+      legal_status: "Unrecognized by Polish courts as a language or minority despite multiple large-scale public petitions.",
+      population_projection_2026: "790,000 (High-density regional publication and publishing)"
+    }
+  },
+  // --- URALIC FINNIC ---
+  {
+    id: "karelians",
+    family_id: "uralic_finnic",
+    familyName: "Uralic Finnic Family",
+    name: "Karelians",
+    region: "Europe",
+    category: "Indigenous",
+    location: { latitude: 63.5, longitude: 32.5 },
+    population_count: 60000,
+    color_hex: "#06B6D4",
+    gradient_specs: "linear-gradient(135deg, #06B6D4, #0891B2)",
+    metadata: {
+      summary: "Finnic people of northern lake lands. Original poets of lament and epic songs collected to create the Finnish epic 'Kalevala'.",
+      language_family: "Uralic (Finnic)",
+      legal_status: "Titular minority in Russian Karelia, but language is heavily endangered due to systemic linguistic shift.",
+      population_projection_2026: "56,000 (Active folk music school programs)"
+    }
+  },
+  // --- SINO-TIBETAN ---
+  {
+    id: "sherpa",
+    family_id: "sino_tibetan",
+    familyName: "Sino-Tibetan Family",
+    name: "Sherpa",
+    region: "Asia",
+    category: "Indigenous",
+    location: { latitude: 27.8, longitude: 86.7 },
+    population_count: 150000,
+    color_hex: "#EC4899",
+    gradient_specs: "linear-gradient(135deg, #F472B6, #BE185D)",
+    metadata: {
+      summary: "Tibeto-origins people of Nepal's high-altitude valleys. Possess exceptional respiratory genetics for climbing, alongside deep Nyingma Buddhist custom practices.",
+      language_family: "Sino-Tibetan (Tibeto-Burman)",
+      legal_status: "Constitutionally recognized indigenous nationality in Nepal with local administrative participation rights.",
+      population_projection_2026: "155,000 (Integrating mountaineering unions with park ecology commissions)"
+    }
+  },
+  // --- ISOLATED & PEAK ---
+  {
+    id: "sentinelese",
+    family_id: "andamanese_isolate",
+    familyName: "Andamanese Isolate Family",
+    name: "Sentinelese",
+    region: "Asia",
+    category: "Isolated",
+    location: { latitude: 11.55, longitude: 92.25 },
+    population_count: 80,
+    color_hex: "#10B981",
+    gradient_specs: "linear-gradient(135deg, #34D399, #064E3B)",
+    metadata: {
+      summary: "Totally uncontacted hunter-gatherers of North Sentinel Island. Fending off all outside contact to preserve their pristine ancient island life.",
+      language_family: "Sentinelese isolate (Totally undocumented)",
+      legal_status: "Strictly protected sovereign sanctuary under Indian federal law; any trespass is criminally prosecuted.",
+      population_projection_2026: "80 (Assuredly stable within isolated borders)"
+    }
+  },
+  // --- AMERICAS MACRO-GE ---
+  {
+    id: "kayapo",
+    family_id: "macro_ge_family",
+    familyName: "Macro-Gê Family",
+    name: "Kayapó",
+    region: "Americas",
+    category: "Indigenous",
+    location: { latitude: -7.5, longitude: -52.2 },
+    population_count: 10000,
+    color_hex: "#EF4444",
+    gradient_specs: "linear-gradient(135deg, #F87171, #991B1B)",
+    metadata: {
+      summary: "Amazonian forest dwellers famed for body-paint and defensive protests utilizing satellite maps and planes to expel illicit logging.",
+      language_family: "Macro-Gê",
+      legal_status: "Demarcated reserve in Brazil, but suffering from violent wildcat gold mining and dam projects.",
+      population_projection_2026: "10,800 (Forming high-tech independent jungle patrols)"
+    }
+  },
+  {
+    id: "kogi",
+    family_id: "chibchan_family",
+    familyName: "Chibchan Family",
+    name: "Kogi",
+    region: "Americas",
+    category: "Indigenous",
+    location: { latitude: 10.9, longitude: -73.8 },
+    population_count: 20000,
+    color_hex: "#EF4444",
+    gradient_specs: "linear-gradient(135deg, #F87171, #7F1D1D)",
+    metadata: {
+      summary: "Survivors of pre-conquest Tairona, living in remote mountain valleys. Led by spiritual 'Mamas', they practice deep conservation stewardship of their high Sierra peak.",
+      language_family: "Chibchan (Kágaba)",
+      legal_status: "Sovereign reserve recognized under Colombian law; actively reclaiming sacred coastal lagoons.",
+      population_projection_2026: "21,200 (Active reclaiming of pre-colonial sacred boundaries)"
+    }
+  },
+  {
+    id: "raramuri",
+    family_id: "uto_aztecan_uto",
+    familyName: "Uto-Aztecan Family",
+    name: "Rarámuri",
+    region: "Americas",
+    category: "Indigenous",
+    location: { latitude: 27.5, longitude: -107.5 },
+    population_count: 120000,
+    color_hex: "#EF4444",
+    gradient_specs: "linear-gradient(135deg, #FCA5A5, #B91C1C)",
+    metadata: {
+      summary: "Mountain dwellers of Copper Canyon, Mexico. Celebrated as legendary long-distance runners in minimalist sandals, living via communal farming.",
+      language_family: "Uto-Aztecan",
+      legal_status: "Sovereign land 'ejidos', but heavily threatened by state water droughts and illicit drug-cartel forest logging.",
+      population_projection_2026: "123,000 (Forming community guards against drug cartels)"
+    }
+  },
+  {
+    id: "innu",
+    family_id: "algonquian_alg",
+    familyName: "Algonquian Family",
+    name: "Innu",
+    region: "Americas",
+    category: "Indigenous",
+    location: { latitude: 53.5, longitude: -60.0 },
+    population_count: 30000,
+    color_hex: "#EF4444",
+    gradient_specs: "linear-gradient(135deg, #EF4444, #991B1B)",
+    metadata: {
+      summary: "Innu sub-arctic hunters of Labrador. Strongly protesting against massive hydro reservoirs and military jet test maneuvers on ancestral unceded land.",
+      language_family: "Algic (Innu-aimun)",
+      legal_status: "Recognized First Nation bands in Canada, actively organizing comprehensive treaty land-rights.",
+      population_projection_2026: "31,800 (Restoring youth caribou hunting camps)"
+    }
+  },
+  {
+    id: "ava_guarani",
+    family_id: "tupi_guarani_tupi",
+    familyName: "Tupian South American Family",
+    name: "Ava Guaraní",
+    region: "Americas",
+    category: "Indigenous",
+    location: { latitude: -24.5, longitude: -54.8 },
+    population_count: 18000,
+    color_hex: "#EF4444",
+    gradient_specs: "linear-gradient(135deg, #F43F5E, #4C0519)",
+    metadata: {
+      summary: "Tupi-Guaraní subgroup on Paraguay/Brazil border, reclaiming ancestral coordinates from vast commercial soy and agriculture estates.",
+      language_family: "Tupian (Guaraní)",
+      legal_status: "Highly precarious state, facing violent agricultural conflicts over incomplete territorial demarcations.",
+      population_projection_2026: "18,600 (Highly mobilized for Tekoha recovery)"
+    }
+  },
+  // --- AUSTRONESIAN PACIFIC DIRECTS ---
+  {
+    id: "kanaka_maoli",
+    family_id: "austronesian_oceania",
+    familyName: "Austronesian & Pacific Family",
+    name: "Kanaka Maoli",
+    region: "Oceania",
+    category: "Indigenous",
+    location: { latitude: 20.7, longitude: -156.3 },
+    population_count: 600000,
+    color_hex: "#EC4899",
+    gradient_specs: "linear-gradient(135deg, #EC4899, #86198F)",
+    metadata: {
+      summary: "Native Hawaiians, conserving mountain-to-ocean watershed farming methods and opposing military telescope desecration of sacred peak Mauna Kea.",
+      language_family: "Austronesian (Hawaiian)",
+      legal_status: "Semi-autonomous state-level trusts, but lacking federal tribal sovereignty within the US.",
+      population_projection_2026: "618,000 (Actively reclaiming traditional water channels)"
+    }
+  },
+  {
+    id: "chamorro",
+    family_id: "austronesian_oceania",
+    familyName: "Austronesian & Pacific Family",
+    name: "Chamorro",
+    region: "Oceania",
+    category: "Indigenous",
+    location: { latitude: 13.4, longitude: 144.7 },
+    population_count: 140000,
+    color_hex: "#EC4899",
+    gradient_specs: "linear-gradient(135deg, #F472B6, #701A75)",
+    metadata: {
+      summary: "Indigenous sailors of Guam with a 4000-year maritime lineage. Actively combating military base expansions and coastal ecosystem degradation.",
+      language_family: "Austronesian (Chamorro)",
+      legal_status: "Guam is a US unincorporated territory; Chamorros have US citizenship but lack congressional vote.",
+      population_projection_2026: "144,000 (Mobilizing ecological lawsuits against missile ranges)"
+    }
+  },
+  {
+    id: "rapa_nui",
+    family_id: "austronesian_oceania",
+    familyName: "Austronesian & Pacific Family",
+    name: "Rapa Nui",
+    region: "Oceania",
+    category: "Indigenous",
+    location: { latitude: -27.1, longitude: -109.3 },
+    population_count: 8000,
+    color_hex: "#EC4899",
+    gradient_specs: "linear-gradient(135deg, #E879F9, #4A044E)",
+    metadata: {
+      summary: "Polynesian native builders of colossal Easter Island 'Moai' figures. Managing critical water issues and structural tourism caps under local councils.",
+      language_family: "Austronesian (Rapa Nui)",
+      legal_status: "Special Chilean territory status, with ongoing political struggles for absolute tribal archaeology ownership.",
+      population_projection_2026: "8,300 (Expanding sovereign local food systems)"
+    }
+  },
+  {
+    id: "baduy",
+    family_id: "austronesian_oceania",
+    familyName: "Austronesian & Pacific Family",
+    name: "Baduy",
+    region: "Asia",
+    category: "Isolated",
+    location: { latitude: -6.6, longitude: 106.2 },
+    population_count: 26000,
+    color_hex: "#10B981",
+    gradient_specs: "linear-gradient(135deg, #34D399, #022C22)",
+    metadata: {
+      summary: "Isolated Sundanese mountain community of Java. They completely reject modern technology, transport, and schooling to keep ancestral covenants.",
+      language_family: "Austronesian (Sundanese variant)",
+      legal_status: "Protected customary forest bounds under Indonesian regency decrees; facing tourist pressures.",
+      population_projection_2026: "27,200 (Thriving under ancient tech-free agreements)"
+    }
+  },
+  // --- INDO-IRANIAN ISOLATES ---
+  {
+    id: "kalash",
+    family_id: "indo_iranian_isolate",
+    familyName: "Indo-Iranian Isolate Family",
+    name: "Kalash",
+    region: "Asia",
+    category: "Indigenous",
+    location: { latitude: 35.6, longitude: 71.7 },
+    population_count: 4000,
+    color_hex: "#F59E0B",
+    gradient_specs: "linear-gradient(135deg, #FBBF24, #B45309)",
+    metadata: {
+      summary: "Ancient pre-Islamic polytheistic group in Chitral, Pakistan. Celebrating alpine wine festivals and safeguarding beautiful shell-adorned clothing.",
+      language_family: "Indo-European (Dardic Kalasha)",
+      legal_status: "Statutory minority protection in Pakistan; facing environmental pressures from hyper-tourism.",
+      population_projection_2026: "4,150 (Preserving local courts and valley festivals)"
+    }
+  },
+  // --- STATELESS MIDDLE EAST ---
+  {
+    id: "bedoon",
+    family_id: "mesopotamian_arabic",
+    familyName: "Middle East & Caucasus Family",
+    name: "Bedoon",
+    region: "Asia",
+    category: "Stateless",
+    location: { latitude: 29.3, longitude: 47.9 },
+    population_count: 100000,
+    color_hex: "#009999",
+    gradient_specs: "linear-gradient(135deg, #FBBF24, #78350F)",
+    metadata: {
+      summary: "Third-generation stateless Arabs of Kuwait who fell outside initial citizenship registration in 1961, lacking passports, IDs, and public jobs.",
+      language_family: "Afroasiatic (Semitic)",
+      legal_status: "Labeled as illegal residents; undergoing severe structural struggles claiming basic identification.",
+      population_projection_2026: "105,000 (Organizing active human-rights advocacy fronts)"
+    }
+  },
+  {
+    id: "bahai_iran",
+    family_id: "mesopotamian_arabic",
+    familyName: "Middle East & Caucasus Family",
+    name: "Baha'is of Iran",
+    region: "Asia",
+    category: "Stateless",
+    location: { latitude: 35.7, longitude: 51.4 },
+    population_count: 300000,
+    color_hex: "#009999",
+    gradient_specs: "linear-gradient(135deg, #C084FC, #581C87)",
+    metadata: {
+      summary: "Iran's largest non-Muslim minority, undergoing systemic exclusion from higher education. They run a legendary secret underground university.",
+      language_family: "Indo-European (Iranian)",
+      legal_status: "Unrecognized in the clerical constitution; suffering from arbitrary property asset confiscations.",
+      population_projection_2026: "290,000 (Sustaining underground educational services)"
+    }
+  },
+  {
+    id: "helebi_dom",
+    family_id: "mesopotamian_arabic",
+    familyName: "Middle East & Caucasus Family",
+    name: "Helebi Dom",
+    region: "Asia",
+    category: "Stateless",
+    location: { latitude: 33.5, longitude: 36.3 },
+    population_count: 300000,
+    color_hex: "#009999",
+    gradient_specs: "linear-gradient(135deg, #FDE047, #A16207)",
+    metadata: {
+      summary: "Nomadic Domari/Roma subgroups of the Levant. Famed for metal craft, currently facing extreme displacement and lack of civil status due to regional wars.",
+      language_family: "Indo-European (Indo-Aryan Domari)",
+      legal_status: "Totally undocumented/stateless in most parts of Syria and Lebanon, lacking basic refugee shelter support.",
+      population_projection_2026: "295,000 (Mobilizing for baseline birth certificates)"
+    }
+  },
+  // --- MONGOLIC / CHUKOTKO ---
+  {
+    id: "daur",
+    family_id: "mongolic_family",
+    familyName: "Mongolic Family",
+    name: "Daur",
+    region: "Asia",
+    category: "Indigenous",
+    location: { latitude: 48.4, longitude: 123.9 },
+    population_count: 130000,
+    color_hex: "#06B6D4",
+    gradient_specs: "linear-gradient(135deg, #22D3EE, #0891B2)",
+    metadata: {
+      summary: "Descendants of Khitan empires in Innermost Mongolia. Famous for the intense ancient glow-ball field hockey sport 'Beikou' and millet farming.",
+      language_family: "Mongolic (Daur)",
+      legal_status: "Recognized titular autonomous banner in China, helping preserve Beikou leagues and active Shamanic linguistics.",
+      population_projection_2026: "133,000 (Thriving Beikou scholastic programs)"
+    }
+  },
+  {
+    id: "chukchi",
+    family_id: "chukotko_kamchatkan",
+    familyName: "Chukotko-Kamchatkan Family",
+    name: "Chukchi",
+    region: "Asia", // Geographically Russian Arctic
+    category: "Indigenous",
+    location: { latitude: 66.0, longitude: 172.0 },
+    population_count: 16000,
+    color_hex: "#06B6D4",
+    gradient_specs: "linear-gradient(135deg, #06B6D4, #044E54)",
+    metadata: {
+      summary: "Arctic Peninsula inhabitants. Historically split into tundra reindeer riders and coastal whale hunters, they famously resisted Tsarist conquest.",
+      language_family: "Chukotko-Kamchatkan",
+      legal_status: "Protected indigenous minority in Siberia; facing rapid pack ice melting and tundra fragmentation.",
+      population_projection_2026: "16,400 (Highly impacted by industrial maritime routes)"
+    }
+  },
+  // --- WEST / CENTRAL AFRICANS ---
+  {
+    id: "ogoni",
+    family_id: "niger_congo",
+    familyName: "Niger-Congo Western Family",
+    name: "Ogoni",
+    region: "Africa",
+    category: "Indigenous",
+    location: { latitude: 4.7, longitude: 7.2 },
+    population_count: 850000,
+    color_hex: "#FFCC00",
+    gradient_specs: "linear-gradient(135deg, #FBBF24, #78350F)",
+    metadata: {
+      summary: "Delta community internationally legendary for non-violent resistance (led by Ken Saro-Wiwa) protesting systemic petroleum oil spills in their marshes.",
+      language_family: "Niger-Congo",
+      legal_status: "Achieved global environmental backing and court clean-up settlements, but actual restoration is dangerously slow.",
+      population_projection_2026: "880,000 (Actively taking over marshlands monitoring boards)"
+    }
+  },
+  {
+    id: "cabindans",
+    family_id: "niger_congo",
+    familyName: "Niger-Congo Western Family",
+    name: "Cabindans",
+    region: "Africa",
+    category: "Stateless",
+    location: { latitude: -5.5, longitude: 12.2 },
+    population_count: 700000,
+    color_hex: "#FFCC00",
+    gradient_specs: "linear-gradient(135deg, #FCD34D, #451A03)",
+    metadata: {
+      summary: "Inhabitants of the Cabinda coastlands, separated from Angola. Annexed unilaterally in 1975, they campaign for self-determination over their oil-rich land.",
+      language_family: "Niger-Congo (Bantu)",
+      legal_status: "Subject to high-level Angolan military presence; demanding activation of historic 1885 Simulambuco Treaty.",
+      population_projection_2026: "720,000 (Continuous civil campaigns for regional sovereignty)"
+    }
+  },
+  // --- ALTIC ISolatedS ---
+  {
+    id: "aynu_xinjiang",
+    family_id: "tai_kadai",
+    familyName: "Turkic Altai Family",
+    name: "Aynu of Xinjiang",
+    region: "Asia",
+    category: "Isolated",
+    location: { latitude: 39.0, longitude: 78.5 },
+    population_count: 15000,
+    color_hex: "#14B8A6",
+    gradient_specs: "linear-gradient(135deg, #2DD4BF, #0F766E)",
+    metadata: {
+      summary: "Taklamakan desert oases community preserving a secret guild language of Persian grammar and Turkic vocabularies and esoteric Sufi song.",
+      language_family: "Turkic / Persian hybrid",
+      legal_status: "Officially mapped as Uyghurs by Chinese registries, a classification disputed by cultural anthropologists.",
+      population_projection_2026: "15,300 (Isolated desert guild core stable)"
+    }
+  },
+  // --- CUSHITIC AFROASIATIC ---
+  {
+    id: "oromo",
+    family_id: "cushitic_afroasiatic",
+    familyName: "Cushitic Afroasiatic Family",
+    name: "Oromo",
+    region: "Africa",
+    category: "Indigenous",
+    location: { latitude: 8.0, longitude: 39.0 },
+    population_count: 40000000,
+    color_hex: "#CC6600",
+    gradient_specs: "linear-gradient(135deg, #F97316, #7C2D12)",
+    metadata: {
+      summary: "The primary indigenous nation of Ethiopia. Famously preserving the democratic 'Gadaa' generation-class consensus governance model and coffee cultivation.",
+      language_family: "Afroasiatic (Cushitic)",
+      legal_status: "Titular state status within Ethiopian federal framework; Gadaa registered as UNESCO heritage.",
+      population_projection_2026: "41,500,000 (Active activation of Gadaa local legal courts)"
+    }
+  },
+  // --- SUB-ARCTIC ATHABASKAN ---
+  {
+    id: "dene",
+    family_id: "athabaskan_dene",
+    familyName: "Na-Dené Athabaskan Family",
+    name: "Dene",
+    region: "Americas",
+    category: "Indigenous",
+    location: { latitude: 62.5, longitude: -114.3 },
+    population_count: 25000,
+    color_hex: "#EF4444",
+    gradient_specs: "linear-gradient(135deg, #F87171, #450A0A)",
+    metadata: {
+      summary: "Na-Dené hunters of the sub-arctic boreal forests, leading intense environmental campaigns to filter legacy radioactive mine tailings from local water basins.",
+      language_family: "Na-Dené",
+      legal_status: "Sovereign First Nation treaties in Canada, actively implementing localized land co-management rights.",
+      population_projection_2026: "25,800 (Fostering youth caribou kinship land camps)"
+    }
   }
 ];

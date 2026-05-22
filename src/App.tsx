@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import L from 'leaflet';
+import ThreeGlobe from './components/ThreeGlobe';
 import { 
   INDIGENOUS_GROUPS, 
   IndigenousGroup 
@@ -27,7 +28,6 @@ import {
   RefreshCw,
   Info
 } from 'lucide-react';
-import { GoogleGenAI } from '@google/genai';
 
 export default function App() {
   // --- STATE ---
@@ -38,6 +38,34 @@ export default function App() {
   
   const [activeGroupId, setActiveGroupId] = useState<string>('sami'); // start with Sami
   const [searchFocused, setSearchFocused] = useState(false);
+
+  // Redesign state: viewMode and sidebar collapse
+  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Mobile perspective: 'map' | 'directory' | 'ai'
+  const [mobilePerspective, setMobilePerspective] = useState<'map' | 'directory' | 'ai'>('map');
+  const [isFiltersOpenOnMobile, setIsFiltersOpenOnMobile] = useState(false);
+
+  // Helper to change mobile perspective of directory and scroll smoothly to tribe narrative details
+  const setMobileTabAndScrollToId = (tab: 'map' | 'directory' | 'ai') => {
+    setMobilePerspective(tab);
+    setTimeout(() => {
+      const el = document.getElementById('active-group-sidebar');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 120);
+  };
+
+  // Helper effect to invalidate size of Leaflet map container to prevent rendering visual bugs on tab switches
+  useEffect(() => {
+    if (mobilePerspective === 'map' && mapRef.current) {
+      setTimeout(() => {
+        mapRef.current?.invalidateSize();
+      }, 150);
+    }
+  }, [mobilePerspective]);
 
   // AI Assistant states
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
@@ -130,7 +158,13 @@ export default function App() {
         minZoom: 1.5,
         maxZoom: 12,
         zoomControl: false,
-        attributionControl: false
+        attributionControl: false,
+        worldCopyJump: true,
+        maxBounds: [
+          [-85, -180],
+          [85, 180]
+        ],
+        maxBoundsViscosity: 1.0
       });
 
       // CartoDB Dark Matter tile layer
@@ -216,21 +250,36 @@ export default function App() {
         duration: 1.5
       });
     }
+    setMobilePerspective('map');
   };
 
-  // --- AI QUERY CALLS (LAZY INITIALIZATION) ---
+  // --- AI QUERY CALLS (SERVER PROXIED) ---
   const runAiQuery = async (promptText: string, contextGroup: IndigenousGroup | null, titleText?: string) => {
     setIsAiPanelOpen(true);
     setAiResponse('');
     setIsAiLoading(true);
     if (titleText) setAiTitle(titleText);
     setAiContextGroup(contextGroup);
+    setMobilePerspective('ai');
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    try {
+      const response = await fetch("/api/gemini/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          prompt: promptText,
+          contextGroup: contextGroup
+        })
+      });
 
-    // Gracefully handle raw, unconfigured or empty keys
-    if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "") {
-      setAiResponse(`### Deep Integration Notice
+      const data = await response.json();
+
+      if (response.ok && data.text) {
+        setAiResponse(data.text);
+      } else if (data.error === "MISSING_API_KEY") {
+        setAiResponse(`### Deep Integration Notice
 The application detected that there is no valid \`GEMINI_API_KEY\` set in the secrets env. 
 
 #### 🔧 How To Configure the API Key:
@@ -246,48 +295,12 @@ While you set up your API Key, you can instantly test:
 * **The Cultural gradients & Kinship logic** (The parent-child colors match families across the interactive Leaflet dark mode map).
 * **Multi-tiered search and filtering** by Region and Status (Indigenous, Stateless, Isolated).
 * **Bidirectional Map Pan & Zoom** (Click on a marker on the map to open statistics, and click other 'Cousin' groups in the sidebar to auto-fly to coordinates).`);
-      setIsAiLoading(false);
-      return;
-    }
-
-    try {
-      // Lazy SDK init
-      const ai = new GoogleGenAI({ apiKey });
-
-      // Compose rich ethnobotanical and political contextual prompt to enforce accuracy
-      let fullPrompt = promptText;
-      if (contextGroup) {
-        fullPrompt = `You are an expert geospatial cultural anthropologist, human-rights representative, and specialized consultant for the UNHCR and IWGIA. 
-Analyze the following group:
-- Name: ${contextGroup.name}
-- Linguistic Family: ${contextGroup.metadata.language_family} (${contextGroup.familyName})
-- Geographic Region: ${contextGroup.region}
-- Population Count: ${contextGroup.population_count} (2026 Projection: ${contextGroup.metadata.population_projection_2026 || 'Pending'})
-- Legal Status: ${contextGroup.metadata.legal_status}
-- Summary: ${contextGroup.metadata.summary}
-
-User Action / Question: ${promptText}
-
-Provide an academic, respectful, rights-based response of about 150-200 words. Highlight self-determination indicators and cultural survival strategies. Highlight international instruments like ILO Convention 169. Formulate in clean Markdown.`;
       } else {
-        fullPrompt = `${promptText}
-
-Use the database of our mapped peoples (including the Sámi, Nenets, Pulaar, Jola, Maasai, San, Adivasi, Rohingya, Kurds, and Atakora Otamari) as case studies where relevant. Provide an academic, rights-based, respectful study of about 250 words. Format with headers and bullet points in Markdown.`;
-      }
-
-      const result = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: fullPrompt
-      });
-
-      if (result.text) {
-        setAiResponse(result.text);
-      } else {
-        setAiResponse("Received empty response from Gemini API. Please retry.");
+        setAiResponse(`### API Call Unsuccessful\n\nThere was an error communicating with the Gemini models: ${data.error || "Unknown Error"}`);
       }
     } catch (err: any) {
       console.error(err);
-      setAiResponse(`### API Call Unsuccessful\n\nThere was an error communicating with the Gemini models. Please verify your billing status or API key permissions.\n\n**Error Trace:** \`${err?.message || err}\``);
+      setAiResponse(`### Connection Error\n\nThere was an error connecting to the backend server.\n\n**Error Trace:** \`${err?.message || err}\``);
     } finally {
       setIsAiLoading(false);
     }
@@ -300,27 +313,32 @@ Use the database of our mapped peoples (including the Sámi, Nenets, Pulaar, Jol
 
     setIsCustomGroupLoading(true);
     setCustomGroupAnswer('');
-    
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "") {
-      setCustomGroupAnswer("Gemini API key is not configured. Run the prompt anyway to read setup metrics.");
-      runAiQuery(customGroupPrompt, activeGroup, `Querying the Oracle for ${activeGroup.name}`);
-      setIsCustomGroupLoading(false);
-      return;
-    }
 
     try {
-      const ai = new GoogleGenAI({ apiKey });
-      const prompt = `Act as an expert envoy for the ${activeGroup.name} people. Answer this specific query concerning our heritage, lands, language, or present challenges: "${customGroupPrompt}". Context: ${activeGroup.metadata.summary}. Give a concise, poignant 100-word response.`;
-      const result = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt
+      const response = await fetch("/api/gemini/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          contextGroup: activeGroup,
+          isGroupSpecific: true,
+          customPrompt: customGroupPrompt
+        })
       });
-      if (result.text) {
-        setCustomGroupAnswer(result.text);
+
+      const data = await response.json();
+
+      if (response.ok && data.text) {
+        setCustomGroupAnswer(data.text);
+      } else if (data.error === "MISSING_API_KEY") {
+        setCustomGroupAnswer("Gemini API key is not configured. Run the prompt anyway to read setup metrics.");
+        runAiQuery(customGroupPrompt, activeGroup, `Querying the Oracle for ${activeGroup.name}`);
+      } else {
+        setCustomGroupAnswer(`Error: ${data.error || "Unknown Error"}`);
       }
     } catch (err: any) {
-      setCustomGroupAnswer(`Error: ${err.message || err}`);
+      setCustomGroupAnswer(`Connection Error: ${err.message || err}`);
     } finally {
       setIsCustomGroupLoading(false);
     }
@@ -377,370 +395,581 @@ Use the database of our mapped peoples (including the Sámi, Nenets, Pulaar, Jol
     setSelectedFamily('All');
   };
 
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (selectedStatus !== 'All') count++;
+    if (selectedRegion !== 'All') count++;
+    if (selectedFamily !== 'All') count++;
+    if (searchQuery.trim() !== '') count++;
+    return count;
+  }, [selectedStatus, selectedRegion, selectedFamily, searchQuery]);
+
   return (
-    <div className="relative flex flex-col h-screen w-screen overflow-hidden bg-[#0c0c0e] font-sans antialiased text-zinc-200">
+    <div className="relative flex flex-col h-screen w-screen overflow-hidden bg-[#040406] font-sans antialiased text-zinc-300">
       
-      {/* 1. TOP COMMAND BAR (UTILITY LAYER) */}
-      <header className="glass-panel z-40 relative flex flex-col md:flex-row items-center justify-between gap-4 px-6 py-4 border-b border-white/5">
+      {/* 1. TOP COMMAND & CONTROL HEADER (TACTICAL TELEMETRY DECK) */}
+      <header className="z-40 relative flex items-center justify-between gap-3 px-4 md:px-5 border-b border-zinc-800 bg-[#060608] shrink-0 h-14">
         
-        {/* Title Brand */}
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
-            <Globe className="w-5 h-5 text-amber-400 animate-pulse" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 via-amber-200 to-amber-500 font-display">
-                ISPIM
+        {/* Core System Label */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-1 h-5 md:w-1.5 md:h-6 bg-blue-600 rounded-sm animate-pulse shrink-0" />
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-[10px] md:text-xs font-bold font-mono tracking-wider md:tracking-widest text-zinc-100 uppercase truncate">
+                <span className="hidden xs:inline">ISPIM // </span>GEOPOLITICAL INDEX
               </h1>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300 font-semibold uppercase tracking-widest">
-                v2.5
+              <span className="hidden sm:inline text-[8px] font-mono px-1.5 py-0.2 select-none rounded border border-blue-500/20 text-blue-400 bg-blue-950/20">
+                SYS_2.5
               </span>
             </div>
-            <p className="text-[10px] text-zinc-400 font-sans tracking-wide">
-              Indigenous & Stateless Peoples Interactive Map
+            <p className="hidden md:block text-[9px] font-mono text-zinc-500 tracking-wide truncate">
+              MAPPED INDIGENOUS REPERTOIRE & STATELESS GLOBAL SURVIVAL DECK
             </p>
           </div>
         </div>
 
-        {/* Filters Matrix */}
-        <div className="flex flex-wrap items-center gap-2 max-w-full">
+        {/* View Switching Center Command (Highly Prominent & Responsive) */}
+        <div className="flex items-center p-0.5 rounded border border-zinc-800 bg-zinc-950 shadow-inner shrink-0">
+          <button 
+            onClick={() => {
+              setViewMode('2d');
+              setMobilePerspective('map');
+            }}
+            className={`px-2.5 md:px-3.5 py-1 font-mono text-[9px] uppercase font-bold tracking-wider rounded transition-all cursor-pointer ${
+              viewMode === '2d' 
+                ? 'bg-blue-600/90 text-white shadow-md' 
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            <span className="hidden xs:inline">2D Vector</span>
+            <span className="xs:hidden">2D</span>
+          </button>
+          <button 
+            onClick={() => {
+              setViewMode('3d');
+              setMobilePerspective('map');
+            }}
+            className={`px-2.5 md:px-3.5 py-1 font-mono text-[9px] uppercase font-bold tracking-wider rounded transition-all cursor-pointer ${
+              viewMode === '3d' 
+                ? 'bg-blue-600/90 text-white shadow-md' 
+                : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            <span className="hidden xs:inline">3D Spherical</span>
+            <span className="xs:hidden">3D</span>
+          </button>
+        </div>
+
+        {/* Dense Filters Matrix - Always visible on desktop */}
+        <div className="hidden lg:flex items-center gap-2 max-w-full">
           
           {/* Status filter */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900/60 border border-white/5">
-            <Filter className="w-3.5 h-3.5 text-zinc-400" />
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-zinc-805 bg-[#09090c]">
+            <Filter className="w-3 h-3 text-zinc-500" />
             <select 
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value as any)}
-              className="bg-transparent text-xs hover:text-white cursor-pointer focus:outline-none text-zinc-300 font-medium"
+              className="bg-transparent text-[10px] font-mono hover:text-white cursor-pointer focus:outline-none text-zinc-400"
             >
-              <option value="All" className="bg-[#121214] text-zinc-100">Status: All</option>
-              <option value="Indigenous" className="bg-[#121214] text-zinc-100">Indigenous</option>
-              <option value="Stateless" className="bg-[#121214] text-zinc-100">Stateless</option>
-              <option value="Isolated" className="bg-[#121214] text-zinc-100">Isolated</option>
+              <option value="All" className="bg-[#09090c] text-zinc-300">STATUS: ALL</option>
+              <option value="Indigenous" className="bg-[#09090c] text-zinc-300">INDIGENOUS</option>
+              <option value="Stateless" className="bg-[#09090c] text-zinc-300">STATELESS</option>
+              <option value="Isolated" className="bg-[#09090c] text-zinc-300">ISOLATED</option>
             </select>
           </div>
 
           {/* Region filter */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900/60 border border-white/5">
-            <Globe className="w-3.5 h-3.5 text-zinc-400" />
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-zinc-805 bg-[#09090c]">
+            <Globe className="w-3 h-3 text-zinc-500" />
             <select 
               value={selectedRegion}
               onChange={(e) => setSelectedRegion(e.target.value as any)}
-              className="bg-transparent text-xs hover:text-white cursor-pointer focus:outline-none text-zinc-300 font-medium"
+              className="bg-transparent text-[10px] font-mono hover:text-white cursor-pointer focus:outline-none text-zinc-400"
             >
-              <option value="All" className="bg-[#121214] text-zinc-100">Region: All</option>
-              <option value="Americas" className="bg-[#121214] text-zinc-100">Americas</option>
-              <option value="Asia" className="bg-[#121214] text-zinc-100">Asia</option>
-              <option value="Europe" className="bg-[#121214] text-zinc-100">Europe</option>
-              <option value="Africa" className="bg-[#121214] text-zinc-100">Africa</option>
-              <option value="Oceania" className="bg-[#121214] text-zinc-100">Oceania</option>
+              <option value="All" className="bg-[#09090c] text-zinc-300">REGION: ALL</option>
+              <option value="Americas" className="bg-[#09090c] text-zinc-300">AMERICAS</option>
+              <option value="Asia" className="bg-[#09090c] text-zinc-300">ASIA</option>
+              <option value="Europe" className="bg-[#09090c] text-zinc-300">EUROPE</option>
+              <option value="Africa" className="bg-[#09090c] text-zinc-300">AFRICA</option>
+              <option value="Oceania" className="bg-[#09090c] text-zinc-300">OCEANIA</option>
             </select>
           </div>
 
           {/* Kinship Family filter */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900/60 border border-white/5">
-            <Layers className="w-3.5 h-3.5 text-zinc-400" />
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-zinc-805 bg-[#09090c]">
+            <Layers className="w-3 h-3 text-zinc-500" />
             <select 
               value={selectedFamily}
               onChange={(e) => setSelectedFamily(e.target.value)}
-              className="bg-transparent text-xs hover:text-white cursor-pointer focus:outline-none text-zinc-300 font-medium max-w-[150px] overflow-hidden text-ellipsis"
+              className="bg-transparent text-[10px] font-mono hover:text-white cursor-pointer focus:outline-none text-zinc-400 max-w-[130px] overflow-hidden text-ellipsis"
             >
-              <option value="All" className="bg-[#121214] text-zinc-100">Family: All</option>
+              <option value="All" className="bg-[#09090c] text-zinc-300">FAMILY: ALL</option>
               {familyIds.map((fam) => (
-                <option key={fam.id} value={fam.id} className="bg-[#121214] text-zinc-100">
-                  {fam.name}
+                <option key={fam.id} value={fam.id} className="bg-[#09090c] text-zinc-300">
+                  {fam.name.toUpperCase()}
                 </option>
               ))}
             </select>
           </div>
 
           {/* Search container */}
-          <div className="relative flex items-center">
-            <Search className={`absolute left-3 w-4 h-4 transition-colors ${searchFocused ? 'text-amber-400' : 'text-zinc-500'}`} />
+          <div className="relative flex items-center bg-[#09090c] border border-zinc-805 rounded">
+            <Search className={`absolute left-2.5 w-3 h-3 transition-colors ${searchFocused ? 'text-blue-400' : 'text-zinc-500'}`} />
             <input 
               type="text"
-              placeholder="Search clans, languages..."
+              placeholder="Query clans, dialects..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
-              className={`pl-9 pr-8 py-1.5 w-[200px] rounded-lg text-xs font-medium glass-input ${searchFocused ? 'w-[250px]' : 'w-[200px]'}`}
+              className="pl-7 pr-7 py-1 w-[150px] text-[10px] font-mono bg-transparent text-zinc-200 outline-none transition-all duration-300 focus:w-[190px]"
             />
             {searchQuery && (
               <button 
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3.5 text-zinc-400 hover:text-white transition-colors"
-                id="search-clear-btn"
+                className="absolute right-2 text-zinc-500 hover:text-white transition-colors cursor-pointer"
               >
-                <X className="w-3 h-3" />
+                <X className="w-2.5 h-2.5" />
               </button>
             )}
           </div>
 
-          {/* Active filtered indicator / Reset button */}
+          {/* Reset Filters trigger */}
           {(searchQuery || selectedStatus !== 'All' || selectedRegion !== 'All' || selectedFamily !== 'All') && (
             <button 
               onClick={handleResetFilters}
-              className="flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 hover:bg-amber-500/20 transition-colors"
-              id="reset-filters-btn"
+              className="flex items-center gap-1 text-[9px] font-mono px-2 py-1.5 rounded bg-blue-950/25 border border-blue-500/20 text-blue-400 hover:bg-blue-500/10 transition-colors cursor-pointer"
             >
-              <RefreshCw className="w-2.5 h-2.5" />
-              Clear Filters ({filteredGroups.length})
+              <RefreshCw className="w-2.5 h-2.5 animate-spin-slow" />
+              CLEAR ({filteredGroups.length})
             </button>
           )}
 
         </div>
 
-        {/* System Online lights state */}
-        <div className="hidden lg:flex items-center gap-4 text-[11px] text-zinc-400 font-mono">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse"></span>
-            <span>AI: Online</span>
+        {/* Mobile Filters Trigger / Toggle */}
+        <button
+          onClick={() => setIsFiltersOpenOnMobile(!isFiltersOpenOnMobile)}
+          className={`lg:hidden flex items-center justify-center gap-1.5 px-3 py-1.5 rounded border font-mono text-[9px] font-bold tracking-wider cursor-pointer transition-all shrink-0 ${
+            isFiltersOpenOnMobile || activeFiltersCount > 0
+              ? 'bg-blue-950/40 border-blue-500/40 text-blue-300 shadow-[0_0_8px_rgba(59,130,246,0.15)] animate-pulse'
+              : 'border-zinc-800 bg-[#09090c] hover:bg-zinc-900 text-zinc-400 hover:text-zinc-250'
+          }`}
+        >
+          <Filter className={`w-3.5 h-3.5 ${activeFiltersCount > 0 ? 'text-blue-400' : 'text-zinc-500'}`} />
+          <span>FILTER</span>
+          {activeFiltersCount > 0 && (
+            <span className="flex items-center justify-center px-1.5 py-0.2 rounded bg-blue-600 text-white font-mono text-[8px] font-black leading-tight">
+              {activeFiltersCount}
+            </span>
+          )}
+        </button>
+
+        {/* Global Encryption Status Logs */}
+        <div className="hidden lg:flex items-center gap-3 text-[9px] text-zinc-500 font-mono">
+          <div className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+            <span>SECURE_AI: TRUE</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#fbbf24] animate-pulse"></span>
-            <span>DB: {stats.totalCount} Peoples Mapped</span>
+          <div className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span>MAP_NODES: {stats.totalCount} ACTIVE</span>
           </div>
         </div>
 
       </header>
 
-      {/* Main content grid */}
-      <div className="flex-1 flex flex-col lg:flex-row relative overflow-hidden">
-        
-        {/* 2. LEFT SIDEBAR DASHBOARD (METADATA LAYER) */}
-        <aside className="glass-panel w-full lg:w-[380px] h-[400px] lg:h-auto flex flex-col border-r border-white/5 z-30 overflow-hidden shrink-0">
+      {/* Mobile Drawer Slide-Down for Filters & Search (Top-tier responsive overlay) */}
+      {isFiltersOpenOnMobile && (
+        <div className="lg:hidden absolute left-0 right-0 top-14 z-50 p-4 border-b border-zinc-800 bg-[#07070a]/98 backdrop-blur-md grid grid-cols-1 sm:grid-cols-2 gap-3.5 shadow-2 flex flex-col shadow-2xl animate-fade-in">
           
-          {/* Scrollable content container */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          {/* Search container */}
+          <div className="flex flex-col gap-1 sm:col-span-2">
+            <span className="text-[8px] font-mono text-zinc-500 uppercase font-bold tracking-widest">Global Search Cluster</span>
+            <div className="relative flex items-center bg-[#09090c] border border-zinc-800 rounded p-1">
+              <Search className="w-3.5 h-3.5 text-zinc-505 ml-1.5 mr-2 shrink-0" />
+              <input 
+                type="text"
+                placeholder="Query clans, dialects, summary datasets..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full text-xs font-mono bg-transparent text-zinc-200 outline-none"
+              />
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery('')}
+                  className="p-1 text-zinc-500 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Status filter */}
+          <div className="flex flex-col gap-1">
+            <span className="text-[8px] font-mono text-zinc-500 uppercase font-bold tracking-widest">Select Category</span>
+            <div className="flex items-center gap-2 p-2 rounded border border-zinc-800 bg-[#09090c]">
+              <Filter className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+              <select 
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value as any)}
+                className="w-full bg-transparent text-xs font-mono text-zinc-300 focus:outline-none cursor-pointer"
+              >
+                <option value="All" className="bg-[#09090c] text-zinc-300">STATUS: ALL</option>
+                <option value="Indigenous" className="bg-[#09090c] text-blue-400">INDIGENOUS</option>
+                <option value="Stateless" className="bg-[#09090c] text-red-400">STATELESS</option>
+                <option value="Isolated" className="bg-[#09090c] text-amber-400">ISOLATED</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Region filter */}
+          <div className="flex flex-col gap-1">
+            <span className="text-[8px] font-mono text-zinc-500 uppercase font-bold tracking-widest">Select Region</span>
+            <div className="flex items-center gap-2 p-2 rounded border border-zinc-800 bg-[#09090c]">
+              <Globe className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+              <select 
+                value={selectedRegion}
+                onChange={(e) => setSelectedRegion(e.target.value as any)}
+                className="w-full bg-transparent text-xs font-mono text-zinc-300 focus:outline-none cursor-pointer"
+              >
+                <option value="All" className="bg-[#09090c] text-zinc-300">REGION: ALL</option>
+                <option value="Americas" className="bg-[#09090c] text-zinc-300">AMERICAS</option>
+                <option value="Asia" className="bg-[#09090c] text-zinc-301">ASIA</option>
+                <option value="Europe" className="bg-[#09090c] text-zinc-301">EUROPE</option>
+                <option value="Africa" className="bg-[#09090c] text-zinc-301">AFRICA</option>
+                <option value="Oceania" className="bg-[#09090c] text-zinc-301">OCEANIA</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Kinship Family filter */}
+          <div className="flex flex-col gap-1 sm:col-span-2">
+            <span className="text-[8px] font-mono text-zinc-500 uppercase font-bold tracking-widest">Select Language Family</span>
+            <div className="flex items-center gap-2 p-2 rounded border border-zinc-800 bg-[#09090c]">
+              <Layers className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+              <select 
+                value={selectedFamily}
+                onChange={(e) => setSelectedFamily(e.target.value)}
+                className="w-full bg-transparent text-xs font-mono text-zinc-300 focus:outline-none cursor-pointer"
+              >
+                <option value="All" className="bg-[#09090c] text-zinc-300">FAMILY: ALL</option>
+                {familyIds.map((fam) => (
+                  <option key={fam.id} value={fam.id} className="bg-[#09090c] text-zinc-302">
+                    {fam.name.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Reset Filters & Close in mobile drawer */}
+          <div className="flex items-center justify-between gap-3 sm:col-span-2 pt-2 border-t border-zinc-800">
+            <button 
+              onClick={() => {
+                handleResetFilters();
+              }}
+              disabled={activeFiltersCount === 0}
+              className="flex items-center gap-1.5 text-[9px] font-mono px-3 py-2 rounded bg-red-950/20 border border-red-500/20 text-red-400 hover:bg-red-500/10 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
+            >
+              <RefreshCw className="w-2.5 h-2.5" />
+              RESET ({activeFiltersCount})
+            </button>
+            <button 
+              onClick={() => setIsFiltersOpenOnMobile(false)}
+              className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-500 text-white font-mono font-bold text-[9px] uppercase shadow-md transition-colors cursor-pointer"
+            >
+              APPLY FILTERS ({filteredGroups.length})
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Main interactive grid containing map canvas and floating HUD cards */}
+      <div className="flex-1 flex flex-col lg:flex-row relative overflow-hidden bg-black">
+        
+        {/* MAP/GLOBE VISUALIZATION REGION (Occupies 100% of spatial canvas background) */}
+        <main className="flex-1 relative h-full w-full bg-black">
+          
+          {/* Map display */}
+          <div 
+            className={`absolute inset-0 z-10 w-full h-full transition-opacity duration-300 ${
+              viewMode === '2d' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            <div 
+              ref={mapContainerRef} 
+              className="w-full h-full"
+              style={{ outline: 'none' }}
+            />
+          </div>
+
+          {/* 3D Sphere Globe display */}
+          <div 
+            className={`absolute inset-0 z-10 w-full h-full transition-opacity duration-300 ${
+              viewMode === '3d' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            {viewMode === '3d' && (
+              <ThreeGlobe 
+                groups={filteredGroups}
+                activeGroupId={activeGroupId}
+                onSelectGroup={(id) => {
+                  setActiveGroupId(id);
+                  const lookup = INDIGENOUS_GROUPS.find(g => g.id === id);
+                  if (lookup && mapRef.current) {
+                    mapRef.current.setView([lookup.location.latitude, lookup.location.longitude], 6);
+                  }
+                }}
+              />
+            )}
+          </div>
+
+          {/* COLLAPSED HUD DIRECTORY TRIGGER EYE (Shown on left side when panel is minimized) */}
+          {isSidebarCollapsed && (
+            <button
+              onClick={() => setIsSidebarCollapsed(false)}
+              className="absolute left-4 top-4 z-30 p-2.5 rounded border border-zinc-800 bg-[#09090c]/90 text-blue-400 hover:text-white cursor-pointer shadow-xl transition-all hover:bg-zinc-900 group"
+              title="Expand Inspector Matrix"
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              <span className="absolute left-full ml-2 px-2 py-1 rounded border border-zinc-800 bg-[#09090c] text-[8px] tracking-widest font-mono text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap">
+                EXPAND_INDEX
+              </span>
+            </button>
+          )}
+
+          {/* COLLAPSED HUD ENVOY TRIGGER EYE (Shown on right side when AI panel is minimized) */}
+          {!isAiPanelOpen && (
+            <button
+              onClick={() => {
+                setIsAiPanelOpen(true);
+                if (!aiResponse) {
+                  setAiResponse("### Ask ISPIM AI Envoy\nType anything in the prompt input below like:\n* *'How do the Otamari tata houses preserve pre-colonial defense strategies?'*\n* *'Who are the Jola and why are they considered forest guardians?'*\n* *'Explain the concept of self-identification under UNDRIP.'*");
+                }
+              }}
+              className="absolute right-4 top-4 z-30 p-2.5 rounded border border-zinc-800 bg-[#09090c]/90 text-blue-400 hover:text-white cursor-pointer shadow-xl transition-all hover:bg-zinc-900 group"
+              title="Open AI Intelligence Envoy"
+            >
+              <Sparkles className="w-4 h-4 animate-pulse" />
+              <span className="absolute right-full mr-2 px-2 py-1 rounded border border-zinc-800 bg-[#09090c] text-[8px] tracking-widest font-mono text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap">
+                CONSULT_ENVOY
+              </span>
+            </button>
+          )}
+
+          {/* 2. FLOATING HUD CARD: SYSTEM INSPECTOR INDEX (LEFT SIDEBAR) */}
+          <aside 
+            className={`absolute inset-x-0 top-0 bottom-0 lg:left-4 lg:top-4 lg:bottom-4 w-full lg:w-[350px] h-full lg:h-auto z-30 flex flex-col rounded-none lg:rounded border-none lg:border border-zinc-800 bg-[#07070a]/96 lg:bg-[#07070a]/92 backdrop-blur-md shadow-2xl transition-all duration-300 pointer-events-auto overflow-hidden ${
+              isSidebarCollapsed ? '-translate-x-full lg:-translate-x-[380px]' : 'translate-x-0'
+            } ${mobilePerspective === 'directory' ? 'flex' : 'hidden lg:flex'}`}
+          >
             
-            {activeGroup ? (
-              /* ACTIVE GROUP VIEW */
-              <div className="space-y-4" id="active-group-sidebar">
-                
-                {/* Header Card */}
-                <div className="relative p-4 rounded-xl overflow-hidden border border-white/10" style={{ background: 'rgba(15,15,20,0.82)' }}>
-                  {/* Decorative background gradient */}
-                  <div 
-                    className="absolute inset-0 opacity-10 pointer-events-none" 
-                    style={{ background: activeGroup.gradient_specs }}
-                  />
+            {/* Inspector Header with Collapse Control */}
+            <div className="px-4 py-3 border-b border-zinc-805 bg-zinc-950 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-1.5">
+                <LayoutDashboard className="w-3.5 h-3.5 text-blue-400" />
+                <span className="text-[10px] font-mono uppercase font-bold tracking-widest text-zinc-300">
+                  SYSTEM INSPECTOR
+                </span>
+              </div>
+              <button 
+                onClick={() => {
+                  setIsSidebarCollapsed(true);
+                  setMobilePerspective('map');
+                }}
+                className="p-1 rounded hover:bg-zinc-900 text-zinc-500 hover:text-zinc-300 cursor-pointer transition-colors"
+                title="Collapse Inspector"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Scrollable HUD Content */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              
+              {activeGroup ? (
+                /* ACTIVE NODE DETAILED SCOPE */
+                <div className="space-y-4 animate-fade-in" id="active-group-sidebar">
                   
-                  <div className="relative z-10">
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-[10px] uppercase tracking-widest font-mono text-zinc-400">
-                        {activeGroup.region} Region
-                      </span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-white/5 border border-white/10" style={{ color: activeGroup.color_hex }}>
-                        {activeGroup.category}
-                      </span>
+                  {/* Dense Coordinates Info Box */}
+                  <div className="relative p-3 rounded border border-zinc-800 bg-[#0a0a0d] overflow-hidden">
+                    <div className="absolute top-0 right-0 w-8 h-8 opacity-10 font-mono text-[36px] select-none font-bold text-blue-500">
+                      //
                     </div>
+                    
+                    <div className="relative z-10 space-y-2">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <span className="text-[8px] font-mono uppercase tracking-widest text-zinc-500">
+                          {activeGroup.region} SEGMENT
+                        </span>
+                        <span className="text-[8px] font-mono px-2 py-0.5 rounded border border-zinc-805 bg-zinc-900/50 uppercase tracking-wider text-blue-400">
+                          {activeGroup.category}
+                        </span>
+                      </div>
 
-                    <h2 className="text-xl font-bold font-display tracking-tight text-white mb-1">
-                      {activeGroup.name}
-                    </h2>
+                      <h2 className="text-sm font-bold font-mono tracking-tight text-zinc-100 uppercase">
+                        {activeGroup.name}
+                      </h2>
 
-                    <div className="flex items-center gap-2 text-xs text-amber-200">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: activeGroup.gradient_specs }} />
-                      <span className="font-semibold">{activeGroup.familyName}</span>
-                    </div>
+                      {/* Linguistic Matrix classification */}
+                      <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 font-mono">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: activeGroup.gradient_specs }} />
+                        <span>{activeGroup.familyName}</span>
+                      </div>
 
-                    {/* Population projection banner */}
-                    <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-xs">
-                      <div>
-                        <div className="text-[10px] text-zinc-400 uppercase tracking-wider">Verified Count</div>
-                        <div className="font-mono text-sm font-bold text-zinc-100">
-                          {activeGroup.population_count.toLocaleString()}
+                      {/* Statistical logs */}
+                      <div className="pt-2 border-t border-zinc-900 grid grid-cols-2 gap-2 text-[10px] font-mono">
+                        <div>
+                          <p className="text-[8px] text-zinc-500 uppercase">VERIFIED_COUNT</p>
+                          <p className="font-bold text-zinc-200">{activeGroup.population_count.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-[8px] text-zinc-500 uppercase">PROJECTION_2026</p>
+                          <p className="font-bold text-blue-400">{activeGroup.metadata.population_projection_2026 || "N/A"}</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-[10px] text-zinc-400 uppercase tracking-wider">2026 Projection</div>
-                        <div className="font-mono text-xs font-semibold text-amber-200/90">
-                          {activeGroup.metadata.population_projection_2026 || "Not Available"}
+                    </div>
+                  </div>
+
+                  {/* Regional kinship colored gradients */}
+                  <div className="p-3 rounded border border-zinc-800 bg-[#0a0a0d]/40 space-y-2">
+                    <div className="flex items-center justify-between text-[9px] font-mono uppercase text-zinc-400 font-bold tracking-widest">
+                      <span>Kinship Color Index</span>
+                      <span className="text-zinc-600">ID: {activeGroup.family_id.toUpperCase()}</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded shadow-inner flex shrink-0 border border-zinc-800" style={{ background: activeGroup.gradient_specs }} />
+                      <div className="text-[9px] font-mono text-zinc-400 leading-normal">
+                        Minor clanned subdivisions share parent hue family <span className="text-blue-400">{activeGroup.familyName}</span> to map architectural roots and territorial migration.
+                      </div>
+                    </div>
+
+                    {/* Cousin indexing */}
+                    {cousinGroups.length > 0 && (
+                      <div className="pt-2.5 border-t border-zinc-800 space-y-1">
+                        <span className="text-[8px] uppercase tracking-wider text-zinc-500 font-mono font-bold block">Related System Nodes:</span>
+                        <div className="grid grid-cols-1 gap-1">
+                          {cousinGroups.map((cousin) => {
+                            const isActive = cousin.id === activeGroupId;
+                            return (
+                              <button
+                                key={cousin.id}
+                                onClick={() => handleSelectGroup(cousin)}
+                                className={`text-[10px] font-mono px-2 py-1 rounded border transition-all duration-150 flex items-center justify-between cursor-pointer w-full text-left ${
+                                  isActive
+                                    ? 'bg-blue-950/40 border-blue-500/40 text-blue-300 font-semibold'
+                                    : 'bg-[#09090c]/50 border-zinc-900 hover:border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900/60'
+                                }`}
+                              >
+                                <span className="truncate flex items-center gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: cousin.gradient_specs }} />
+                                  {cousin.name.toUpperCase()}
+                                </span>
+                                <ChevronRight className="w-3 h-3 text-zinc-600" />
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
-                    </div>
-
-                  </div>
-                </div>
-
-                {/* Cultural Gradients and Cousin logic */}
-                <div className="p-4 rounded-xl bg-zinc-950/40 border border-white/5 space-y-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-300 font-display">
-                    <Layers className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Parent-Child Custom Gradient</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg shadow-inner flex items-center justify-center border border-white/10 shrink-0" style={{ background: activeGroup.gradient_specs }}>
-                      <span className="text-white text-[10px] font-bold font-mono">C</span>
-                    </div>
-                    <div>
-                      <p className="text-[11px] text-zinc-300">
-                        Hue: <span className="font-mono uppercase tracking-wider text-amber-200" style={{ color: activeGroup.color_hex }}>{activeGroup.family_id}</span>
-                      </p>
-                      <p className="text-[10px] text-zinc-400 leading-normal">
-                        Minor cousin-tribes share their parental core hue to denote ethnic kinship while keeping distinct gradient specs.
-                      </p>
-                    </div>
+                    )}
                   </div>
 
-                  {/* COUSINS IN THE SYSTEM */}
-                  {cousinGroups.length > 0 ? (
-                    <div className="pt-3 border-t border-white/5 space-y-1.5">
-                      <div className="text-[10px] uppercase text-zinc-400 font-bold tracking-wider">Related Cousin Tribes:</div>
-                      <div className="flex flex-col gap-1.5">
-                        {cousinGroups.map((cousin) => {
-                          const isActive = cousin.id === activeGroupId;
-                          return (
-                            <button
-                              key={cousin.id}
-                              onClick={() => handleSelectGroup(cousin)}
-                              className={`text-xs px-3 py-2 rounded-lg border transition-all duration-200 flex items-center justify-between gap-3 cursor-pointer w-full text-left group/btn ${
-                                isActive
-                                  ? 'bg-amber-500/15 border-amber-500 text-amber-300 font-semibold shadow-[0_0_12px_rgba(245,158,11,0.2)] ring-1 ring-amber-500/20'
-                                  : 'bg-zinc-900/60 border-white/5 hover:border-amber-400/30 text-zinc-300 hover:text-white hover:bg-zinc-900/90'
-                              }`}
-                              id={`cousin-btn-${cousin.id}`}
-                            >
-                              <div className="flex items-center gap-2 truncate">
-                                <span className="relative flex h-2 w-2 shrink-0">
-                                  {isActive && (
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-amber-400" />
-                                  )}
-                                  <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: cousin.gradient_specs }} />
-                                </span>
-                                <span className={isActive ? 'font-semibold truncate text-[13px]' : 'truncate text-[13px]'}>
-                                  {cousin.name}
-                                </span>
-                              </div>
-                              <ChevronRight className={`w-3.5 h-3.5 shrink-0 transition-all duration-200 ${
-                                isActive 
-                                  ? 'text-amber-400 translate-x-0.5 opacity-100' 
-                                  : 'text-zinc-500 opacity-60 group-hover/btn:opacity-100 group-hover/btn:text-amber-400 group-hover/btn:translate-x-0.5'
-                              }`} />
-                            </button>
-                          );
-                        })}
-                      </div>
+                  {/* Resilient analysis context */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1 text-[9px] uppercase font-bold text-zinc-400 font-mono tracking-widest">
+                      <BookOpen className="w-3 h-3 text-blue-500" />
+                      <span>SOCIODEMOGRAPHIC BRIEF</span>
                     </div>
-                  ) : (
-                    <div className="text-[10px] text-zinc-500 pt-2 italic">No other related cousin groups mapped in the local registry.</div>
-                  )}
-
-                </div>
-
-                {/* Narrative / Context */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-300 font-display">
-                    <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Historical Narrative & Resilience Summary</span>
-                  </div>
-                  <p className="text-xs text-zinc-300 leading-relaxed bg-zinc-950/20 p-3 rounded-lg border border-white/5">
-                    {activeGroup.metadata.summary}
-                  </p>
-                </div>
-
-                {/* Complex Legal/Political rights-based status */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-300 font-display">
-                    <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Rights-Based Legal & Political Status</span>
-                  </div>
-                  <div className="p-3 rounded-lg border border-red-500/10 bg-red-950/2 font-sans text-xs text-zinc-300 space-y-1">
-                    <div className="font-semibold text-zinc-100 text-[11px]" style={{ color: activeGroup.color_hex }}>
-                      {activeGroup.metadata.language_family} Isolate context
-                    </div>
-                    <p className="leading-relaxed">
-                      {activeGroup.metadata.legal_status}
+                    <p className="text-[11px] text-zinc-400 leading-relaxed bg-[#0a0a0d]/20 p-2.5 rounded border border-zinc-900 font-mono">
+                      {activeGroup.metadata.summary}
                     </p>
                   </div>
-                </div>
 
-                {/* Direct Ask Gemini Input Container */}
-                <div className="p-4 rounded-xl border border-amber-500/15" style={{ background: 'linear-gradient(180deg, rgba(20,18,15,0.7) 0%, rgba(12,12,14,0.9) 100%)' }}>
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-300 font-display mb-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Ask Gemini about {activeGroup.name} people</span>
-                  </div>
-                  <p className="text-[10px] text-zinc-400 mb-3Leading">
-                    Have specific questions about their ethnobotanical history, regional folklore, or present struggles? Submit a direct query.
-                  </p>
-                  
-                  <form onSubmit={handleGroupSpecificAsk} className="flex gap-2">
-                    <input 
-                      type="text"
-                      placeholder={`e.g. Traditional dress, religion...`}
-                      value={customGroupPrompt}
-                      onChange={(e) => setCustomGroupPrompt(e.target.value)}
-                      className="flex-1 px-3 py-1.5 text-xs rounded-lg glass-input min-w-0"
-                    />
-                    <button 
-                      type="submit"
-                      disabled={isCustomGroupLoading || !customGroupPrompt.trim()}
-                      className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-xs font-bold text-[#0c0c0e] flex items-center justify-center cursor-pointer transition-colors"
-                      id="ask-group-btn"
-                    >
-                      {isCustomGroupLoading ? <Loader2 className="w-4.5 h-4.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5" />}
-                    </button>
-                  </form>
-
-                  {customGroupAnswer && (
-                    <div className="mt-3 p-3 rounded bg-zinc-950 border border-white/5 max-h-[160px] overflow-y-auto" id="custom-group-answer-box">
-                      <div className="text-[9px] uppercase font-bold text-amber-400 tracking-wider mb-1">Envoys answer:</div>
-                      <p className="text-[11px] text-zinc-300 leading-relaxed font-sans">{customGroupAnswer}</p>
+                  {/* Legal Protection telemetry */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1 text-[9px] uppercase font-bold text-zinc-400 font-mono tracking-widest">
+                      <ShieldAlert className="w-3 h-3 text-red-500 animate-pulse" />
+                      <span>LEGAL SURVIVAL STATUS</span>
                     </div>
-                  )}
-
-                </div>
-
-              </div>
-            ) : (
-              /* CORE OVERVIEW VIEW - WHEN POPULATION IN GENERAL VIEW */
-              <div className="space-y-5" id="sidebar-overview-layout">
-                <div className="p-4 rounded-xl bg-zinc-900/50 border border-white/5 text-center">
-                  <Globe className="w-8 h-8 text-amber-400/80 mx-auto mb-2" />
-                  <h3 className="text-sm font-bold font-display uppercase tracking-widest text-zinc-200">
-                    Geospatial Workspace
-                  </h3>
-                  <p className="text-xs text-zinc-400 mt-1">
-                    Showing statistics and distribution metrics for current system filters. Expand groups by clicking map markers or selecting them below.
-                  </p>
-                </div>
-
-                {/* SVG MINI CHART BAR */}
-                <div className="p-4 rounded-xl bg-zinc-950/40 border border-white/5 space-y-3">
-                  <div className="text-xs font-bold font-display text-zinc-300 flex items-center gap-1.5">
-                    <LayoutDashboard className="w-4 h-4 text-amber-400" />
-                    <span>Regional Distribution ({stats.totalCount})</span>
+                    <div className="p-2.5 rounded border border-zinc-900 bg-[#0a0a0d]/20 font-mono text-[10px] text-zinc-400 leading-relaxed">
+                      {activeGroup.metadata.legal_status}
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    {/* SVG graphic rendering */}
-                    <div className="text-[10px] text-zinc-400 font-medium">Mapped ethnic segments across major continents:</div>
+                  {/* Ask Envoy specific prompt panel */}
+                  <div className="p-3 rounded border border-blue-500/20 bg-blue-950/5 space-y-2">
+                    <div className="flex items-center gap-1.5 text-[9px] font-mono font-bold text-blue-400 uppercase tracking-widest">
+                      <Sparkles className="w-3 h-3 text-blue-400" />
+                      <span>LOCAL ENVOY QUERY PORT</span>
+                    </div>
+                    <p className="text-[9px] text-zinc-500 font-mono leading-normal">
+                      Query cultural preservation folklore, vernacular architecture defense, or land rights challenges:
+                    </p>
                     
-                    {/* CUSTOM BARS IN HTML CSS */}
-                    <div className="space-y-1.5 pt-1">
+                    <form onSubmit={handleGroupSpecificAsk} className="flex gap-1.5">
+                      <input 
+                        type="text"
+                        placeholder={`e.g. Traditional dress, oral lore...`}
+                        value={customGroupPrompt}
+                        onChange={(e) => setCustomGroupPrompt(e.target.value)}
+                        className="flex-1 px-2 py-1 text-[10px] font-mono rounded border border-zinc-800 bg-zinc-950 text-zinc-300 focus:border-blue-500/50 outline-none"
+                      />
+                      <button 
+                        type="submit"
+                        disabled={isCustomGroupLoading || !customGroupPrompt.trim()}
+                        className="px-2 py-1 rounded bg-blue-600 hover:bg-blue-500 hover:shadow-md cursor-pointer text-[10px] font-bold font-mono text-white flex items-center justify-center transition-colors disabled:opacity-30"
+                      >
+                        {isCustomGroupLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowRight className="w-3 h-3" />}
+                      </button>
+                    </form>
+
+                    {customGroupAnswer && (
+                      <div className="p-2.5 rounded bg-zinc-950 border border-zinc-900 max-h-[140px] overflow-y-auto" id="custom-group-answer-box">
+                        <span className="text-[8px] uppercase font-bold text-blue-400 font-mono tracking-wider block mb-1">DATA RESPONSE LOCK:</span>
+                        <p className="text-[10px] text-zinc-400 leading-relaxed font-mono whitespace-pre-line">{customGroupAnswer}</p>
+                      </div>
+                    )}
+
+                  </div>
+
+                </div>
+              ) : (
+                /* SYSTEM GENERAL OVERVIEW (WHEN PORTAL HAS NO INDIVIDUAL TARGET SELECTED) */
+                <div className="space-y-4 font-mono select-none" id="sidebar-overview-layout">
+                  
+                  <div className="p-3 rounded border border-zinc-800 bg-zinc-950 text-center space-y-1">
+                    <Globe className="w-5 h-5 text-blue-500 mx-auto animate-spin-slow" />
+                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-300">
+                      GEOSPATIAL SPATIAL GRID
+                    </h3>
+                    <p className="text-[9px] text-zinc-500 leading-relaxed">
+                      Select map markers or indices to anchor individual cluster coordinates and lock telemetry focus.
+                    </p>
+                  </div>
+
+                  {/* MONOCHROMATIC BLUE DUST DISTRIBUTION CHART */}
+                  <div className="p-3 rounded border border-zinc-800 bg-[#0a0a0d] space-y-2.5">
+                    <div className="text-[9px] font-bold uppercase text-zinc-400 tracking-widest flex items-center gap-1.5 border-b border-zinc-900 pb-1.5">
+                      <LayoutDashboard className="w-3 h-3 text-blue-400" />
+                      <span>REGIONAL RATIO INDEX ({stats.totalCount})</span>
+                    </div>
+
+                    <div className="space-y-2">
                       {Object.entries(stats.regionsCount).map(([regionName, count]) => {
                         const numValue = count as number;
                         const pct = stats.totalCount > 0 ? (numValue / stats.totalCount) * 100 : 0;
                         return (
                           <div key={regionName} className="space-y-0.5">
-                            <div className="flex items-center justify-between text-[10px]">
-                              <span className="text-zinc-300 font-semibold">{regionName}</span>
-                              <span className="text-zinc-400 font-mono">{count} ({Math.round(pct)}%)</span>
+                            <div className="flex items-center justify-between text-[9px]">
+                              <span className="text-zinc-400 font-bold uppercase tracking-wide">{regionName}</span>
+                              <span className="text-zinc-500 font-mono font-medium">{count} ({Math.round(pct)}%)</span>
                             </div>
-                            <div className="h-2 w-full bg-zinc-900 rounded-full overflow-hidden border border-white/5">
+                            <div className="h-1.5 w-full bg-zinc-900 rounded overflow-hidden border border-zinc-850">
                               <div 
-                                className="h-full rounded-full transition-all duration-500" 
-                                style={{ 
-                                  width: `${pct}%`,
-                                  background: regionName === 'Europe' ? 'linear-gradient(90deg, #009999, #00E1E1)' :
-                                              regionName === 'Africa' ? 'linear-gradient(90deg, #FFCC00, #CC6600)' :
-                                              regionName === 'Americas' ? 'linear-gradient(90deg, #CC0000, #800000)' :
-                                              regionName === 'Oceania' ? 'linear-gradient(90deg, #9933CC, #660099)' :
-                                              'linear-gradient(90deg, #00A896, #028090)'
-                                }}
+                                className="h-full rounded-sm bg-blue-600 shadow-[0_0_4px_rgba(59,130,246,0.3)] transition-all duration-400" 
+                                style={{ width: `${pct}%` }}
                               />
                             </div>
                           </div>
@@ -748,258 +977,284 @@ Use the database of our mapped peoples (including the Sámi, Nenets, Pulaar, Jol
                       })}
                     </div>
                   </div>
+
+                  {/* High Tech legend categories explanation */}
+                  <div className="p-3 rounded border border-zinc-800 bg-[#0a0a0d]/50 space-y-1.5">
+                    <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">MAP_TELEMETRY_KEY</span>
+                    <p className="text-[9px] text-zinc-400 leading-normal leading-relaxed">
+                      Map nodes represent indigenous segments, isolated communities, and stateless peoples plotted directly on Mercator (2D) and Spherical (3D) coordinates.
+                    </p>
+                    <div className="grid grid-cols-2 gap-1 pt-1 text-[8px] text-zinc-400 uppercase">
+                      <div className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                        <span>Indigenous</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                        <span>Stateless</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                        <span>Isolated</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* List Index */}
+                  <div className="space-y-1.5">
+                    <span className="text-[9px] font-bold uppercase text-zinc-400 tracking-widest block">
+                      SECURE POPULATION REGISTER
+                    </span>
+                    <div className="border border-zinc-800 rounded divide-y divide-zinc-900 max-h-[160px] overflow-y-auto bg-zinc-950">
+                      {filteredGroups.map((group) => (
+                        <button 
+                          key={group.id}
+                          onClick={() => handleSelectGroup(group)}
+                          className="w-full flex items-center justify-between text-left p-2 hover:bg-zinc-900 transition-colors text-[10px] font-bold text-zinc-400 hover:text-white"
+                        >
+                          <span className="truncate flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: group.gradient_specs }} />
+                            {group.name.toUpperCase()}
+                          </span>
+                          <span className="font-mono text-zinc-500 text-[9px] shrink-0">
+                            {group.population_count.toLocaleString()}
+                          </span>
+                        </button>
+                      ))}
+                      {filteredGroups.length === 0 && (
+                        <div className="p-4 text-center text-[9px] text-zinc-600 italic">No nodes detected under current criteria.</div>
+                      )}
+                    </div>
+                  </div>
+
                 </div>
-
-                {/* Cultural legend explanation card */}
-                <div className="p-4 rounded-xl bg-zinc-900/40 border border-white/5 space-y-2">
-                  <div className="text-xs font-semibold text-zinc-300 uppercase tracking-widest font-mono">
-                    Culture Gradients Rule
-                  </div>
-                  <p className="text-[10px] text-zinc-400 leading-normal">
-                    This interactive map employs an Attribute-Based system to denote kinship. Main language Families share a core thematic hue range, and individual tribes are distinguished by nested parent-child linear gradients.
-                  </p>
-                  <div className="grid grid-cols-2 gap-1.5 pt-2 text-[10px]">
-                    <div className="flex items-center gap-1">
-                      <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-[#009999] to-[#00E1E1]" />
-                      <span className="text-zinc-300">Uralic Arctic</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-[#FFCC00] to-[#CC9900]" />
-                      <span className="text-zinc-300">Niger-Congo</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-[#CC0000] to-[#800000]" />
-                      <span className="text-zinc-300">Americas Indig.</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-[#9933CC] to-[#660099]" />
-                      <span className="text-zinc-300">Austronesian</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Direct List select box */}
-                <div className="space-y-2">
-                  <div className="text-xs font-bold text-zinc-300 font-display uppercase tracking-widest">
-                    Mapped Populations Index
-                  </div>
-                  <div className="border border-white/5 rounded-xl divide-y divide-white/5 max-h-[250px] overflow-y-auto bg-zinc-950/20">
-                    {filteredGroups.map((group) => (
-                      <button 
-                        key={group.id}
-                        onClick={() => handleSelectGroup(group)}
-                        className="w-full flex items-center justify-between text-left p-3 hover:bg-zinc-900/60 transition-colors text-xs font-semibold text-zinc-300 hover:text-white"
-                        id={`index-item-${group.id}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: group.gradient_specs }} />
-                          <span>{group.name}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-zinc-400 font-mono text-[10px]">
-                          <span>{group.population_count.toLocaleString()}</span>
-                          <ArrowRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-amber-400" />
-                        </div>
-                      </button>
-                    ))}
-                    {filteredGroups.length === 0 && (
-                      <div className="p-4 text-center text-xs text-zinc-500 italic">No groups match filters. Click 'reset filters' in the command bar.</div>
-                    )}
-                  </div>
-                </div>
-
-              </div>
-            )}
-
-          </div>
-
-          {/* Bottom attribution card */}
-          <div className="p-4 border-t border-white/5 bg-zinc-950/60 flex items-center justify-between text-[10px] text-zinc-400">
-            <span className="flex items-center gap-1">
-              <Compass className="w-3.5 h-3.5 text-amber-500" />
-              Spliced from IWGIA & MRG data
-            </span>
-            <span>UNHCR Database verified 2026</span>
-          </div>
-
-        </aside>
-
-        {/* 3. CENTRAL MAP CANVAS (VISUALIZATION LAYER) */}
-        <main className="flex-1 relative h-full w-full bg-[#0d0d11]">
-          {/* Leaflet native Div Container */}
-          <div 
-            ref={mapContainerRef} 
-            className="absolute inset-0 z-10 w-full h-full"
-            style={{ outline: 'none' }}
-          />
-
-          {/* Quick AI Trigger Action Chips (Floating Over the Map) */}
-          <div className="absolute top-4 right-4 z-20 flex flex-wrap gap-2 max-w-[280px] md:max-w-md pointer-events-auto">
-            
-            <button 
-              onClick={() => runAiQuery(
-                "Identify which mapped communities (e.g. Manchu, Xakriabá, Veps) are undergoing the most severe language threats. What are the geopolitical factors driving these shifts? What recommendations do international human rights bodies (UNESCO, IWGIA) offer for revitalization?",
-                null,
-                "Linguistic Shifts & Endangerment analysis"
               )}
-              className="px-3 py-2 rounded-full glass-panel hover:border-amber-400/30 text-xs font-semibold text-zinc-200 hover:text-white flex items-center gap-1.5 transition-all shadow-xl"
-              style={{ background: 'rgba(20,20,30,0.85)' }}
-              id="action-btn-lang-shifts"
-            >
-              <Volume2 className="w-3.5 h-3.5 text-amber-400" />
-              Expose Language Shifts
-            </button>
 
-            <button 
-              onClick={() => runAiQuery(
-                "Examine the rights-based status of unrecognized stateless groups like the West Papuans, Rohingya, or Yanomami. Detail how they exist outside conventional state systems, the impact of land exploitation, and what protections they are afforded under ILO Convention 169.",
-                null,
-                "Statelessness & Land Rights Legal analysis"
-              )}
-              className="px-3 py-2 rounded-full glass-panel hover:border-amber-400/30 text-xs font-semibold text-zinc-200 hover:text-white flex items-center gap-1.5 transition-all shadow-xl"
-              style={{ background: 'rgba(20,20,30,0.85)' }}
-              id="action-btn-legal-status"
-            >
-              <ShieldAlert className="w-3.5 h-3.5 text-red-400 animate-pulse" />
-              Expose Legal Injustices
-            </button>
+            </div>
 
-            <button 
-              onClick={() => runAiQuery(
-                "Act as an expert geospatial cultural anthropologist. Analyze the parental-child kinship links of our mapped Uralic, Niger-Congo, and Austronesian families. Explain how these 'cousin' groups showcase deep historic bonds, shared folklore, yet distinct territorial adaptations.",
-                null,
-                "Cultural Kinship and Syncretism Analysis"
-              )}
-              className="px-3 py-2 rounded-full glass-panel hover:border-amber-400/30 text-xs font-semibold text-zinc-200 hover:text-white flex items-center gap-1.5 transition-all shadow-xl"
-              style={{ background: 'rgba(20,20,30,0.85)' }}
-              id="action-btn-kinship"
-            >
-              <Layers className="w-3.5 h-3.5 text-blue-400" />
-              Trace Cultural Symbiosis
-            </button>
+            {/* Tactical lower bar */}
+            <div className="p-3 border-t border-zinc-800 bg-zinc-950 flex items-center justify-between text-[8px] text-zinc-500 font-mono select-none">
+              <span className="flex items-center gap-1">
+                <Compass className="w-3 h-3 text-blue-500" />
+                UNHCR DATASETS VERIFIED_2026
+              </span>
+              <span>SYS_STABLE: OK</span>
+            </div>
 
-            {/* General AI ask button */}
-            <button 
-              onClick={() => {
-                setIsAiPanelOpen(true);
-                setAiResponse("### Ask ISPIM AI Envoy\nType anything in the prompt input below like:\n* *'How do the Otamari tata houses preserve pre-colonial defense strategies?'*\n* *'Who are the Jola and why are they considered forest guardians?'*\n* *'Explain the concept of self-identification under UNDRIP.'*");
-              }}
-              className="px-3 py-2 rounded-full bg-amber-500 text-zinc-950 font-display font-medium text-xs flex items-center gap-1.5 shadow-xl glow-btn hover:bg-amber-400"
-              id="action-btn-global-ask"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Ask Envoy
-            </button>
+          </aside>
 
-          </div>
-
-          {/* 4. OVERLAY ENVOY AI RESPONSE PANEL (GLASSMORPHIC CHROME) */}
+          {/* 3. FLOATING HUD CARD: GEOPOLITICAL AI DIRECT ENVOY PANEL (RIGHT OVERLAY) */}
           {isAiPanelOpen && (
-            <div className="absolute inset-y-4 right-4 w-full max-w-[340px] md:max-w-md z-30 glass-panel-gold rounded-2xl flex flex-col overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] pointer-events-auto" id="global-ai-overlay-panel">
+            <div 
+              className={`absolute inset-x-0 top-0 bottom-0 lg:right-4 lg:top-4 lg:bottom-4 w-full lg:w-[380px] h-full lg:h-auto z-30 flex flex-col rounded-none lg:rounded border-none lg:border border-zinc-800 bg-[#07070a]/96 lg:bg-[#07070a]/92 backdrop-blur-md shadow-2xl overflow-hidden pointer-events-auto transition-all duration-300 ${
+                isAiPanelOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-[420px]'
+              } ${mobilePerspective === 'ai' ? 'flex' : 'hidden lg:flex'}`}
+              id="global-ai-overlay-panel"
+            >
               
-              {/* Header */}
-              <div className="px-5 py-4 border-b border-amber-500/10 flex items-center justify-between bg-zinc-950/40">
-                <div className="flex items-center gap-2">
-                  <div className="p-1 rounded bg-amber-500/10 border border-amber-500/20">
-                    <Sparkles className="w-4 h-4 text-amber-400 animate-spin-slow" />
+              {/* Overlay Header */}
+              <div className="px-4 py-3 border-b border-zinc-808 bg-zinc-950 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <div className="p-1 rounded bg-blue-950/20 border border-blue-500/20">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-400" />
                   </div>
                   <div>
-                    <h3 className="text-xs uppercase tracking-widest font-mono text-zinc-400">Gemini Intelligence</h3>
-                    <div className="text-sm font-bold font-display text-transparent bg-clip-text bg-gradient-to-r from-amber-100 to-amber-300">
-                      {aiTitle}
+                    <h3 className="text-[8px] uppercase tracking-widest font-mono text-zinc-500 font-bold">GEMINI INTELLIGENCE</h3>
+                    <div className="text-xs font-bold font-mono text-zinc-200">
+                      {aiTitle.toUpperCase()}
                     </div>
                   </div>
                 </div>
                 <button 
-                  onClick={() => setIsAiPanelOpen(false)}
-                  className="p-1.5 rounded-full hover:bg-white/5 text-zinc-400 hover:text-white transition-all cursor-pointer"
-                  id="ai-panel-close-btn"
+                  onClick={() => {
+                    setIsAiPanelOpen(false);
+                    setMobilePerspective('map');
+                  }}
+                  className="p-1.5 rounded hover:bg-zinc-900 text-zinc-500 hover:text-white cursor-pointer transition-colors"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              {/* Response markdown scrolling content */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {/* Data streams / AI scrolling response */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 
                 {aiContextGroup && (
-                  <div className="p-3 rounded-lg border border-amber-500/10 bg-amber-950/5 flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-lg flex items-center justify-center font-mono font-bold text-xs" style={{ background: aiContextGroup.gradient_specs }}>
+                  <div className="p-2.5 rounded border border-zinc-800 bg-blue-950/5 flex items-center gap-2.5">
+                    <span className="w-6.5 h-6.5 rounded flex items-center justify-center font-mono font-bold text-[10px] text-white shrink-0" style={{ background: aiContextGroup.gradient_specs }}>
                       {aiContextGroup.name.charAt(0)}
                     </span>
-                    <div>
-                      <div className="text-[10px] text-zinc-400 font-mono">Current Context Scope:</div>
-                      <div className="text-xs font-bold text-white uppercase tracking-wider">{aiContextGroup.name}</div>
+                    <div className="min-w-0">
+                      <div className="text-[8px] text-zinc-500 font-mono">ENVOY_CONTEXT_LATCHED:</div>
+                      <div className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest truncate">{aiContextGroup.name}</div>
                     </div>
                   </div>
                 )}
 
                 {isAiLoading ? (
-                  <div className="flex flex-col items-center justify-center h-48 space-y-3">
-                    <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
-                    <p className="text-mono text-zinc-400 text-xs tracking-wider animate-pulse">Consulting IWGIA & UN Ethnohistorical resources...</p>
+                  <div className="flex flex-col items-center justify-center h-48 space-y-2.5">
+                    <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+                    <p className="text-[9px] font-mono text-zinc-500 tracking-wider animate-pulse uppercase">QUERYING ANTHROPOLOGICAL UN STACK...</p>
                   </div>
                 ) : (
-                  <div className="space-y-1 select-text">
+                  <div className="space-y-4 font-mono select-text text-zinc-400">
+                    
                     {parseMarkdown(aiResponse)}
+
+                    {/* Highly Professional Curated Tactical Inquiries matrix */}
+                    <div className="mt-6 pt-5 border-t border-zinc-800 space-y-2.5">
+                      <div className="flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                        <h4 className="text-[10px] font-bold font-mono uppercase tracking-widest text-[#90b1e4]">
+                          TACTICAL ENVOY QUICK INQUIRIES
+                        </h4>
+                      </div>
+                      <p className="text-[9px] text-zinc-500 leading-normal leading-relaxed">
+                        Execute secure preconfigured Gemini API queries on self-determination, legal status conflicts, and language endangerment metrics:
+                      </p>
+                      
+                      <div className="grid grid-cols-1 gap-2 pt-1 font-mono">
+                        {[
+                          {
+                            title: "Linguistic Erosion Matrix",
+                            desc: "Explore severe language endangerment (e.g., Manchu, Jola) and revitalization programs.",
+                            prompt: "Identify which mapped communities (e.g. Manchu, Xakriabá, Veps) are undergoing the most severe language threats. What are the geopolitical factors driving these shifts? What recommendations do international human rights bodies (UNESCO, IWGIA) offer for revitalization?"
+                          },
+                          {
+                            title: "Statelessness & Territorial Injustice",
+                            desc: "Analyze unrecognized sovereign conflicts and ILO Convention 169 protections.",
+                            prompt: "Examine the rights-based status of unrecognized stateless groups like the West Papuans, Rohingya, or Yanomami. Detail how they exist outside conventional state systems, the impact of land exploitation, and what protections they are afforded under ILO Convention 169."
+                          },
+                          {
+                            title: "Ethnohistoric Kinship & Clanning",
+                            desc: "Trace shared parent-child folklore and boundaries across Uralic and Austronesian families.",
+                            prompt: "Act as an expert geospatial cultural anthropologist. Analyze the parental-child kinship links of our mapped Uralic, Niger-Congo, and Austronesian families. Explain how these 'cousin' groups showcase deep historic bonds, shared folklore, yet distinct territorial adaptations."
+                          },
+                          {
+                            title: "Pre-Colonial Ecological Architecture",
+                            desc: "Deconstruct eco-centric folklore structures protecting regional biodiversity pools.",
+                            prompt: "How do pre-colonial architectural designs and eco-centric folklore of stateless or isolated groups (like Jola or San) preserve ecological balance? Provide specific case studies of indigenous-led conservation."
+                          }
+                        ].map((q, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => runAiQuery(q.prompt, aiContextGroup, q.title)}
+                            className="w-full text-left p-2.5 rounded border border-zinc-800 bg-zinc-950/40 hover:bg-blue-500/10 hover:border-blue-500/30 transition-all text-zinc-400 hover:text-white cursor-pointer group/qbtn shadow-sm"
+                          >
+                            <div className="flex items-center justify-between gap-1.5">
+                              <span className="text-[10px] font-bold tracking-tight text-zinc-300 group-hover/qbtn:text-blue-400">
+                                {q.title.toUpperCase()}
+                              </span>
+                              <ChevronRight className="w-3 h-3 text-zinc-650 group-hover/qbtn:text-blue-400 transform group-hover/qbtn:translate-x-0.5 transition-all shrink-0" />
+                            </div>
+                            <p className="text-[9px] text-zinc-500 mt-1 leading-normal">
+                              {q.desc}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                   </div>
                 )}
 
               </div>
 
-              {/* User text input for questions */}
+              {/* Direct Input text port */}
               <form 
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (aiPromptInput.trim()) {
-                    runAiQuery(aiPromptInput, aiContextGroup, "Custom Linguistic Analysis");
+                    runAiQuery(aiPromptInput, aiContextGroup, "Manual Query Capture");
                     setAiPromptInput('');
                   }
                 }}
-                className="p-4 border-t border-amber-500/10 bg-zinc-950/50 space-y-3"
+                className="p-3 border-t border-zinc-800 bg-zinc-950/75 space-y-2.5 shrink-0"
               >
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                   <input 
                     type="text"
                     value={aiPromptInput}
                     onChange={(e) => setAiPromptInput(e.target.value)}
-                    placeholder="Ask more about language shifts, relocations..."
-                    className="flex-1 px-4 py-2 text-xs rounded-xl glass-input min-w-0"
+                    placeholder="Input custom geopolitical query..."
+                    className="flex-1 px-3 py-1.5 text-[10px] font-mono rounded border border-zinc-800 bg-zinc-950 text-zinc-300 outline-none focus:border-blue-500/50"
                   />
                   <button 
                     type="submit"
                     disabled={isAiLoading || !aiPromptInput.trim()}
-                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-xs font-bold text-[#0c0c0e] hover:shadow-[0_0_15px_rgba(245,158,11,0.5)] cursor-pointer disabled:opacity-50 flex items-center gap-1 transition-all"
-                    id="submit-ai-overlay-btn"
+                    className="px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 hover:shadow-md text-[10px] font-bold font-mono text-white flex items-center justify-center transition-all cursor-pointer disabled:opacity-30"
                   >
-                    Send
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    SEND_PORT
                   </button>
                 </div>
-                <div className="flex items-center gap-1.5 text-[9px] text-zinc-400 justify-center">
-                  <Info className="w-3 h-3 text-amber-500" />
-                  <span>Enforces ILO No. 169 & UN UNDRIP Framework values.</span>
+                <div className="flex items-center gap-1.5 text-[8px] font-mono text-zinc-500 justify-center">
+                  <Info className="w-3 h-3 text-blue-500" />
+                  <span>DECK BOUND UNDER UNDRIP AND ILO CONVENTION 169 MANDATES</span>
                 </div>
               </form>
 
             </div>
           )}
 
-          {/* Quick Guide overlay on Map bottom-left */}
-          <div className="absolute bottom-4 left-4 z-20 p-4 rounded-xl glass-panel max-w-[280px]" style={{ background: 'rgba(15,15,22,0.8)' }}>
-            <h4 className="text-xs font-bold font-display uppercase tracking-wider text-amber-200 mb-1 flex items-center gap-1">
-              <Compass className="w-3.5 h-3.5 text-amber-400" />
-              Dynamic Interactive Canvas
+          {/* Quick HUD Guide overlay on Map bottom-left */}
+          <div className="absolute hover:opacity-10 bottom-4 left-4 z-20 p-3 rounded border border-zinc-800 bg-[#07070a]/90 max-w-[210px] pointer-events-auto leading-relaxed select-none">
+            <h4 className="text-[10px] font-bold font-mono uppercase tracking-widest text-zinc-300 flex items-center gap-1.5 mb-1">
+              <Compass className="w-3.5 h-3.5 text-blue-500" />
+              COGNITIVE DECK
             </h4>
-            <p className="text-[10px] text-zinc-400 leading-relaxed">
-              Every circular pulse represents an active community mapped according to modern coordinates from LandMark.
+            <p className="text-[9px] font-mono text-zinc-500 leading-normal">
+              Nodes plotted with precision from Landsat, IWGIA and Landmark databases.
             </p>
-            <p className="text-[10px] text-zinc-400 mt-2 font-semibold">
-              💡 Hover on pulses to reveal fast metrics. Click markers to anchor details.
+            <p className="text-[9px] font-mono text-blue-400 mt-2 font-semibold">
+              💡 Drag to steer. Click nodes to focus and unlock direct UN Envoy channels.
             </p>
           </div>
 
         </main>
 
+      </div>
+
+      {/* 4. RESPONSIVE MOBILE TABS DECK */}
+      <div className="lg:hidden z-40 flex border-t border-zinc-900 bg-[#060608] h-12 shrink-0">
+        <button 
+          onClick={() => {
+            setMobilePerspective('map');
+            setIsSidebarCollapsed(true);
+            setIsAiPanelOpen(false);
+          }}
+          className={`flex-1 flex flex-col items-center justify-center font-mono text-[9px] uppercase tracking-wider transition-colors cursor-pointer ${
+            mobilePerspective === 'map' ? 'text-blue-400 bg-zinc-950/60 font-bold' : 'text-zinc-600 hover:text-zinc-400'
+          }`}
+        >
+          <Compass className="w-4 h-4 mb-0.5" />
+          Tactical Map
+        </button>
+        <button 
+          onClick={() => {
+            setMobilePerspective('directory');
+            setIsSidebarCollapsed(false);
+            setIsAiPanelOpen(false);
+          }}
+          className={`flex-1 flex flex-col items-center justify-center font-mono text-[9px] uppercase tracking-wider transition-colors cursor-pointer ${
+            mobilePerspective === 'directory' ? 'text-blue-400 bg-zinc-950/60 font-bold' : 'text-zinc-650 hover:text-zinc-400'
+          }`}
+        >
+          <LayoutDashboard className="w-4 h-4 mb-0.5" />
+          Inspector
+        </button>
+        <button 
+          onClick={() => {
+            setMobilePerspective('ai');
+            setIsSidebarCollapsed(true);
+            setIsAiPanelOpen(true);
+          }}
+          className={`flex-1 flex flex-col items-center justify-center font-mono text-[9px] uppercase tracking-wider transition-colors cursor-pointer ${
+            mobilePerspective === 'ai' ? 'text-blue-400 bg-zinc-950/60 font-bold' : 'text-zinc-650 hover:text-zinc-400'
+          }`}
+        >
+          <Sparkles className="w-4 h-4 mb-0.5 animate-pulse" />
+          Envoy Link
+        </button>
       </div>
 
     </div>

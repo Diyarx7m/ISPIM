@@ -2,5 +2,5 @@
   "name": "ISPIM",
   "description": "Indigenous & Stateless Peoples Interactive Map (ISPIM) - An interactive glassmorphic Matte dashboard mapping over 150 Indigenous, Stateless, and isolated communities globally with deep cultural insights, ethnic kinship color gradients, and AI-powered cultural analyses.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
