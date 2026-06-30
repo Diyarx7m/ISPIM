@@ -30,24 +30,20 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  // --- STATE ---
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<'All' | 'Indigenous' | 'Stateless' | 'Isolated'>('All');
   const [selectedRegion, setSelectedRegion] = useState<'All' | 'Americas' | 'Asia' | 'Europe' | 'Africa' | 'Oceania'>('All');
   const [selectedFamily, setSelectedFamily] = useState<string>('All');
   
-  const [activeGroupId, setActiveGroupId] = useState<string>('sami'); // start with Sami
+  const [activeGroupId, setActiveGroupId] = useState<string>('sami');
   const [searchFocused, setSearchFocused] = useState(false);
 
-  // Redesign state: viewMode and sidebar collapse
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  // Mobile perspective: 'map' | 'directory' | 'ai'
   const [mobilePerspective, setMobilePerspective] = useState<'map' | 'directory' | 'ai'>('map');
   const [isFiltersOpenOnMobile, setIsFiltersOpenOnMobile] = useState(false);
 
-  // Helper to change mobile perspective of directory and scroll smoothly to tribe narrative details
   const setMobileTabAndScrollToId = (tab: 'map' | 'directory' | 'ai') => {
     setMobilePerspective(tab);
     setTimeout(() => {
@@ -58,7 +54,6 @@ export default function App() {
     }, 120);
   };
 
-  // Helper effect to invalidate size of Leaflet map container to prevent rendering visual bugs on tab switches
   useEffect(() => {
     if (mobilePerspective === 'map' && mapRef.current) {
       setTimeout(() => {
@@ -67,7 +62,6 @@ export default function App() {
     }
   }, [mobilePerspective]);
 
-  // AI Assistant states
   const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
   const [aiPromptInput, setAiPromptInput] = useState('');
   const [aiContextGroup, setAiContextGroup] = useState<IndigenousGroup | null>(null);
@@ -75,18 +69,14 @@ export default function App() {
   const [aiResponse, setAiResponse] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   
-  // Custom prompt inputs for the group detail box
   const [customGroupAnswer, setCustomGroupAnswer] = useState<string>('');
   const [isCustomGroupLoading, setIsCustomGroupLoading] = useState<boolean>(false);
   const [customGroupPrompt, setCustomGroupPrompt] = useState<string>('');
 
-  // Map state
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.LayerGroup | null>(null);
 
-  // --- DERIVED DATA ---
-  // Unique family ids of all groups for filters
   const familyIds = useMemo(() => {
     const seen = new Set<string>();
     const list: { id: string; name: string }[] = [];
@@ -99,7 +89,6 @@ export default function App() {
     return list.sort((a, b) => a.name.localeCompare(b.name));
   }, []);
 
-  // Filter groups
   const filteredGroups = useMemo(() => {
     return INDIGENOUS_GROUPS.filter((group) => {
       const matchSearch = 
@@ -117,19 +106,16 @@ export default function App() {
     });
   }, [searchQuery, selectedStatus, selectedRegion, selectedFamily]);
 
-  // Selected Group details
   const activeGroup = useMemo(() => {
     return INDIGENOUS_GROUPS.find(g => g.id === activeGroupId) || null;
   }, [activeGroupId]);
 
-  // Group kinship "Cousins" (from same language family) in alphabetical order
   const cousinGroups = useMemo(() => {
     if (!activeGroup) return [];
     return INDIGENOUS_GROUPS.filter(g => g.family_id === activeGroup.family_id)
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [activeGroup]);
 
-  // Statistics calculations
   const stats = useMemo(() => {
     const totalCount = filteredGroups.length;
     const totalPop = filteredGroups.reduce((acc, g) => acc + g.population_count, 0);
@@ -148,10 +134,8 @@ export default function App() {
     return { totalCount, totalPop, regionsCount, categoriesCount };
   }, [filteredGroups]);
 
-  // --- INITIALIZE MAP ---
   useEffect(() => {
     if (mapContainerRef.current && !mapRef.current) {
-      // Create map centered on general continental boundaries
       const map = L.map(mapContainerRef.current, {
         center: [30.0, 15.0],
         zoom: 2.5,
@@ -167,30 +151,24 @@ export default function App() {
         maxBoundsViscosity: 1.0
       });
 
-      // CartoDB Dark Matter tile layer
       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         maxZoom: 19
       }).addTo(map);
 
-      // Create overlay group for markers
       const markersGroup = L.layerGroup().addTo(map);
 
       mapRef.current = map;
       markersRef.current = markersGroup;
     }
 
-    return () => {
-      // cleanup is handled gracefully
-    };
+    return () => {};
   }, []);
 
-  // --- UPDATE MARKERS ---
   useEffect(() => {
     if (mapRef.current && markersRef.current) {
       markersRef.current.clearLayers();
 
       filteredGroups.forEach((group) => {
-        // Construct the custom HTML element for marker with family gradients
         const customIcon = L.divIcon({
           html: `
             <div class="custom-pulse-marker" style="color: ${group.color_hex};" id="marker-${group.id}">
@@ -207,7 +185,6 @@ export default function App() {
           icon: customIcon
         });
 
-        // Hover Tooltip with Glassmorphic popup style
         marker.bindTooltip(`
           <div class="p-2 min-w-[200px]">
             <div class="flex items-center justify-between gap-1 mb-1">
@@ -228,7 +205,6 @@ export default function App() {
           sticky: true
         });
 
-        // Click Event: auto-pan & open left sidebar details
         marker.on('click', () => {
           setActiveGroupId(group.id);
           mapRef.current?.flyTo([group.location.latitude, group.location.longitude], 6, {
@@ -242,7 +218,6 @@ export default function App() {
     }
   }, [filteredGroups]);
 
-  // --- MANUAL SELECTION PAN ---
   const handleSelectGroup = (group: IndigenousGroup) => {
     setActiveGroupId(group.id);
     if (mapRef.current) {
@@ -253,7 +228,6 @@ export default function App() {
     setMobilePerspective('map');
   };
 
-  // --- AI QUERY CALLS (SERVER PROXIED) ---
   const runAiQuery = async (promptText: string, contextGroup: IndigenousGroup | null, titleText?: string) => {
     setIsAiPanelOpen(true);
     setAiResponse('');
@@ -306,7 +280,6 @@ While you set up your API Key, you can instantly test:
     }
   };
 
-  // --- GROUP SPECIFIC ASK BOX ---
   const handleGroupSpecificAsk = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customGroupPrompt.trim() || !activeGroup) return;
@@ -344,7 +317,6 @@ While you set up your API Key, you can instantly test:
     }
   };
 
-  // --- MARKDOWN SIMPLE PARSER ---
   const parseMarkdown = (text: string) => {
     if (!text) return null;
     const lines = text.split('\n');
@@ -371,7 +343,6 @@ While you set up your API Key, you can instantly test:
         return <li key={idx} className="text-xs text-zinc-300 ml-4 list-decimal my-1 leading-relaxed">{trimmed.replace(/^\d+\./, '').trim()}</li>;
       }
 
-      // Strong / Bold inline formatting
       const htmlText = line
         .replace(/\*\*(.*?)\*\*/g, '<strong class="text-amber-100 font-semibold">$1</strong>')
         .replace(/\*(.*?)\*/g, '<em class="text-zinc-400 italic">$1</em>')
@@ -387,7 +358,6 @@ While you set up your API Key, you can instantly test:
     });
   };
 
-  // --- RESET ALL FILTERS ---
   const handleResetFilters = () => {
     setSearchQuery('');
     setSelectedStatus('All');
@@ -407,10 +377,8 @@ While you set up your API Key, you can instantly test:
   return (
     <div className="relative flex flex-col h-screen w-screen overflow-hidden bg-[#040406] font-sans antialiased text-zinc-300">
       
-      {/* 1. TOP COMMAND & CONTROL HEADER (TACTICAL TELEMETRY DECK) */}
       <header className="z-40 relative flex items-center justify-between gap-3 px-4 md:px-5 border-b border-zinc-800 bg-[#060608] shrink-0 h-14">
         
-        {/* Core System Label */}
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-1 h-5 md:w-1.5 md:h-6 bg-blue-600 rounded-sm animate-pulse shrink-0" />
           <div className="min-w-0">
@@ -428,7 +396,6 @@ While you set up your API Key, you can instantly test:
           </div>
         </div>
 
-        {/* View Switching Center Command (Highly Prominent & Responsive) */}
         <div className="flex items-center p-0.5 rounded border border-zinc-800 bg-zinc-950 shadow-inner shrink-0">
           <button 
             onClick={() => {
@@ -460,10 +427,8 @@ While you set up your API Key, you can instantly test:
           </button>
         </div>
 
-        {/* Dense Filters Matrix - Always visible on desktop */}
         <div className="hidden lg:flex items-center gap-2 max-w-full">
           
-          {/* Status filter */}
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-zinc-805 bg-[#09090c]">
             <Filter className="w-3 h-3 text-zinc-500" />
             <select 
@@ -478,7 +443,6 @@ While you set up your API Key, you can instantly test:
             </select>
           </div>
 
-          {/* Region filter */}
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-zinc-805 bg-[#09090c]">
             <Globe className="w-3 h-3 text-zinc-500" />
             <select 
@@ -495,7 +459,6 @@ While you set up your API Key, you can instantly test:
             </select>
           </div>
 
-          {/* Kinship Family filter */}
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded border border-zinc-805 bg-[#09090c]">
             <Layers className="w-3 h-3 text-zinc-500" />
             <select 
@@ -512,7 +475,6 @@ While you set up your API Key, you can instantly test:
             </select>
           </div>
 
-          {/* Search container */}
           <div className="relative flex items-center bg-[#09090c] border border-zinc-805 rounded">
             <Search className={`absolute left-2.5 w-3 h-3 transition-colors ${searchFocused ? 'text-blue-400' : 'text-zinc-500'}`} />
             <input 
@@ -534,7 +496,6 @@ While you set up your API Key, you can instantly test:
             )}
           </div>
 
-          {/* Reset Filters trigger */}
           {(searchQuery || selectedStatus !== 'All' || selectedRegion !== 'All' || selectedFamily !== 'All') && (
             <button 
               onClick={handleResetFilters}
@@ -547,7 +508,6 @@ While you set up your API Key, you can instantly test:
 
         </div>
 
-        {/* Mobile Filters Trigger / Toggle */}
         <button
           onClick={() => setIsFiltersOpenOnMobile(!isFiltersOpenOnMobile)}
           className={`lg:hidden flex items-center justify-center gap-1.5 px-3 py-1.5 rounded border font-mono text-[9px] font-bold tracking-wider cursor-pointer transition-all shrink-0 ${
@@ -565,7 +525,6 @@ While you set up your API Key, you can instantly test:
           )}
         </button>
 
-        {/* Global Encryption Status Logs */}
         <div className="hidden lg:flex items-center gap-3 text-[9px] text-zinc-500 font-mono">
           <div className="flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
@@ -579,11 +538,9 @@ While you set up your API Key, you can instantly test:
 
       </header>
 
-      {/* Mobile Drawer Slide-Down for Filters & Search (Top-tier responsive overlay) */}
       {isFiltersOpenOnMobile && (
         <div className="lg:hidden absolute left-0 right-0 top-14 z-50 p-4 border-b border-zinc-800 bg-[#07070a]/98 backdrop-blur-md grid grid-cols-1 sm:grid-cols-2 gap-3.5 shadow-2 flex flex-col shadow-2xl animate-fade-in">
           
-          {/* Search container */}
           <div className="flex flex-col gap-1 sm:col-span-2">
             <span className="text-[8px] font-mono text-zinc-500 uppercase font-bold tracking-widest">Global Search Cluster</span>
             <div className="relative flex items-center bg-[#09090c] border border-zinc-800 rounded p-1">
@@ -606,7 +563,6 @@ While you set up your API Key, you can instantly test:
             </div>
           </div>
 
-          {/* Status filter */}
           <div className="flex flex-col gap-1">
             <span className="text-[8px] font-mono text-zinc-500 uppercase font-bold tracking-widest">Select Category</span>
             <div className="flex items-center gap-2 p-2 rounded border border-zinc-800 bg-[#09090c]">
@@ -624,7 +580,6 @@ While you set up your API Key, you can instantly test:
             </div>
           </div>
 
-          {/* Region filter */}
           <div className="flex flex-col gap-1">
             <span className="text-[8px] font-mono text-zinc-500 uppercase font-bold tracking-widest">Select Region</span>
             <div className="flex items-center gap-2 p-2 rounded border border-zinc-800 bg-[#09090c]">
@@ -644,7 +599,6 @@ While you set up your API Key, you can instantly test:
             </div>
           </div>
 
-          {/* Kinship Family filter */}
           <div className="flex flex-col gap-1 sm:col-span-2">
             <span className="text-[8px] font-mono text-zinc-500 uppercase font-bold tracking-widest">Select Language Family</span>
             <div className="flex items-center gap-2 p-2 rounded border border-zinc-800 bg-[#09090c]">
@@ -664,7 +618,6 @@ While you set up your API Key, you can instantly test:
             </div>
           </div>
 
-          {/* Reset Filters & Close in mobile drawer */}
           <div className="flex items-center justify-between gap-3 sm:col-span-2 pt-2 border-t border-zinc-800">
             <button 
               onClick={() => {
@@ -686,13 +639,10 @@ While you set up your API Key, you can instantly test:
         </div>
       )}
 
-      {/* Main interactive grid containing map canvas and floating HUD cards */}
       <div className="flex-1 flex flex-col lg:flex-row relative overflow-hidden bg-black">
         
-        {/* MAP/GLOBE VISUALIZATION REGION (Occupies 100% of spatial canvas background) */}
         <main className="flex-1 relative h-full w-full bg-black">
           
-          {/* Map display */}
           <div 
             className={`absolute inset-0 z-10 w-full h-full transition-opacity duration-300 ${
               viewMode === '2d' ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -705,7 +655,6 @@ While you set up your API Key, you can instantly test:
             />
           </div>
 
-          {/* 3D Sphere Globe display */}
           <div 
             className={`absolute inset-0 z-10 w-full h-full transition-opacity duration-300 ${
               viewMode === '3d' ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -726,7 +675,6 @@ While you set up your API Key, you can instantly test:
             )}
           </div>
 
-          {/* COLLAPSED HUD DIRECTORY TRIGGER EYE (Shown on left side when panel is minimized) */}
           {isSidebarCollapsed && (
             <button
               onClick={() => setIsSidebarCollapsed(false)}
@@ -740,7 +688,6 @@ While you set up your API Key, you can instantly test:
             </button>
           )}
 
-          {/* COLLAPSED HUD ENVOY TRIGGER EYE (Shown on right side when AI panel is minimized) */}
           {!isAiPanelOpen && (
             <button
               onClick={() => {
@@ -759,14 +706,12 @@ While you set up your API Key, you can instantly test:
             </button>
           )}
 
-          {/* 2. FLOATING HUD CARD: SYSTEM INSPECTOR INDEX (LEFT SIDEBAR) */}
           <aside 
             className={`absolute inset-x-0 top-0 bottom-0 lg:left-4 lg:top-4 lg:bottom-4 w-full lg:w-[350px] h-full lg:h-auto z-30 flex flex-col rounded-none lg:rounded border-none lg:border border-zinc-800 bg-[#07070a]/96 lg:bg-[#07070a]/92 backdrop-blur-md shadow-2xl transition-all duration-300 pointer-events-auto overflow-hidden ${
               isSidebarCollapsed ? '-translate-x-full lg:-translate-x-[380px]' : 'translate-x-0'
             } ${mobilePerspective === 'directory' ? 'flex' : 'hidden lg:flex'}`}
           >
             
-            {/* Inspector Header with Collapse Control */}
             <div className="px-4 py-3 border-b border-zinc-805 bg-zinc-950 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-1.5">
                 <LayoutDashboard className="w-3.5 h-3.5 text-blue-400" />
@@ -786,17 +731,15 @@ While you set up your API Key, you can instantly test:
               </button>
             </div>
 
-            {/* Scrollable HUD Content */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               
               {activeGroup ? (
-                /* ACTIVE NODE DETAILED SCOPE */
+                
                 <div className="space-y-4 animate-fade-in" id="active-group-sidebar">
                   
-                  {/* Dense Coordinates Info Box */}
                   <div className="relative p-3 rounded border border-zinc-800 bg-[#0a0a0d] overflow-hidden">
                     <div className="absolute top-0 right-0 w-8 h-8 opacity-10 font-mono text-[36px] select-none font-bold text-blue-500">
-                      //
+
                     </div>
                     
                     <div className="relative z-10 space-y-2">
@@ -813,13 +756,11 @@ While you set up your API Key, you can instantly test:
                         {activeGroup.name}
                       </h2>
 
-                      {/* Linguistic Matrix classification */}
                       <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 font-mono">
                         <span className="w-2 h-2 rounded-full shrink-0" style={{ background: activeGroup.gradient_specs }} />
                         <span>{activeGroup.familyName}</span>
                       </div>
 
-                      {/* Statistical logs */}
                       <div className="pt-2 border-t border-zinc-900 grid grid-cols-2 gap-2 text-[10px] font-mono">
                         <div>
                           <p className="text-[8px] text-zinc-500 uppercase">VERIFIED_COUNT</p>
@@ -833,7 +774,6 @@ While you set up your API Key, you can instantly test:
                     </div>
                   </div>
 
-                  {/* Regional kinship colored gradients */}
                   <div className="p-3 rounded border border-zinc-800 bg-[#0a0a0d]/40 space-y-2">
                     <div className="flex items-center justify-between text-[9px] font-mono uppercase text-zinc-400 font-bold tracking-widest">
                       <span>Kinship Color Index</span>
@@ -846,7 +786,6 @@ While you set up your API Key, you can instantly test:
                       </div>
                     </div>
 
-                    {/* Cousin indexing */}
                     {cousinGroups.length > 0 && (
                       <div className="pt-2.5 border-t border-zinc-800 space-y-1">
                         <span className="text-[8px] uppercase tracking-wider text-zinc-500 font-mono font-bold block">Related System Nodes:</span>
@@ -876,7 +815,6 @@ While you set up your API Key, you can instantly test:
                     )}
                   </div>
 
-                  {/* Resilient analysis context */}
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-1 text-[9px] uppercase font-bold text-zinc-400 font-mono tracking-widest">
                       <BookOpen className="w-3 h-3 text-blue-500" />
@@ -887,7 +825,6 @@ While you set up your API Key, you can instantly test:
                     </p>
                   </div>
 
-                  {/* Legal Protection telemetry */}
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-1 text-[9px] uppercase font-bold text-zinc-400 font-mono tracking-widest">
                       <ShieldAlert className="w-3 h-3 text-red-500 animate-pulse" />
@@ -898,7 +835,6 @@ While you set up your API Key, you can instantly test:
                     </div>
                   </div>
 
-                  {/* Ask Envoy specific prompt panel */}
                   <div className="p-3 rounded border border-blue-500/20 bg-blue-950/5 space-y-2">
                     <div className="flex items-center gap-1.5 text-[9px] font-mono font-bold text-blue-400 uppercase tracking-widest">
                       <Sparkles className="w-3 h-3 text-blue-400" />
@@ -936,7 +872,7 @@ While you set up your API Key, you can instantly test:
 
                 </div>
               ) : (
-                /* SYSTEM GENERAL OVERVIEW (WHEN PORTAL HAS NO INDIVIDUAL TARGET SELECTED) */
+                
                 <div className="space-y-4 font-mono select-none" id="sidebar-overview-layout">
                   
                   <div className="p-3 rounded border border-zinc-800 bg-zinc-950 text-center space-y-1">
@@ -949,7 +885,6 @@ While you set up your API Key, you can instantly test:
                     </p>
                   </div>
 
-                  {/* MONOCHROMATIC BLUE DUST DISTRIBUTION CHART */}
                   <div className="p-3 rounded border border-zinc-800 bg-[#0a0a0d] space-y-2.5">
                     <div className="text-[9px] font-bold uppercase text-zinc-400 tracking-widest flex items-center gap-1.5 border-b border-zinc-900 pb-1.5">
                       <LayoutDashboard className="w-3 h-3 text-blue-400" />
@@ -978,7 +913,6 @@ While you set up your API Key, you can instantly test:
                     </div>
                   </div>
 
-                  {/* High Tech legend categories explanation */}
                   <div className="p-3 rounded border border-zinc-800 bg-[#0a0a0d]/50 space-y-1.5">
                     <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">MAP_TELEMETRY_KEY</span>
                     <p className="text-[9px] text-zinc-400 leading-normal leading-relaxed">
@@ -1000,7 +934,6 @@ While you set up your API Key, you can instantly test:
                     </div>
                   </div>
 
-                  {/* List Index */}
                   <div className="space-y-1.5">
                     <span className="text-[9px] font-bold uppercase text-zinc-400 tracking-widest block">
                       SECURE POPULATION REGISTER
@@ -1032,7 +965,6 @@ While you set up your API Key, you can instantly test:
 
             </div>
 
-            {/* Tactical lower bar */}
             <div className="p-3 border-t border-zinc-800 bg-zinc-950 flex items-center justify-between text-[8px] text-zinc-500 font-mono select-none">
               <span className="flex items-center gap-1">
                 <Compass className="w-3 h-3 text-blue-500" />
@@ -1043,7 +975,6 @@ While you set up your API Key, you can instantly test:
 
           </aside>
 
-          {/* 3. FLOATING HUD CARD: GEOPOLITICAL AI DIRECT ENVOY PANEL (RIGHT OVERLAY) */}
           {isAiPanelOpen && (
             <div 
               className={`absolute inset-x-0 top-0 bottom-0 lg:right-4 lg:top-4 lg:bottom-4 w-full lg:w-[380px] h-full lg:h-auto z-30 flex flex-col rounded-none lg:rounded border-none lg:border border-zinc-800 bg-[#07070a]/96 lg:bg-[#07070a]/92 backdrop-blur-md shadow-2xl overflow-hidden pointer-events-auto transition-all duration-300 ${
@@ -1052,7 +983,6 @@ While you set up your API Key, you can instantly test:
               id="global-ai-overlay-panel"
             >
               
-              {/* Overlay Header */}
               <div className="px-4 py-3 border-b border-zinc-808 bg-zinc-950 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-1.5">
                   <div className="p-1 rounded bg-blue-950/20 border border-blue-500/20">
@@ -1076,7 +1006,6 @@ While you set up your API Key, you can instantly test:
                 </button>
               </div>
 
-              {/* Data streams / AI scrolling response */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 
                 {aiContextGroup && (
@@ -1101,7 +1030,6 @@ While you set up your API Key, you can instantly test:
                     
                     {parseMarkdown(aiResponse)}
 
-                    {/* Highly Professional Curated Tactical Inquiries matrix */}
                     <div className="mt-6 pt-5 border-t border-zinc-800 space-y-2.5">
                       <div className="flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-blue-400" />
@@ -1160,7 +1088,6 @@ While you set up your API Key, you can instantly test:
 
               </div>
 
-              {/* Direct Input text port */}
               <form 
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -1196,7 +1123,6 @@ While you set up your API Key, you can instantly test:
             </div>
           )}
 
-          {/* Quick HUD Guide overlay on Map bottom-left */}
           <div className="absolute hover:opacity-10 bottom-4 left-4 z-20 p-3 rounded border border-zinc-800 bg-[#07070a]/90 max-w-[210px] pointer-events-auto leading-relaxed select-none">
             <h4 className="text-[10px] font-bold font-mono uppercase tracking-widest text-zinc-300 flex items-center gap-1.5 mb-1">
               <Compass className="w-3.5 h-3.5 text-blue-500" />
@@ -1214,7 +1140,6 @@ While you set up your API Key, you can instantly test:
 
       </div>
 
-      {/* 4. RESPONSIVE MOBILE TABS DECK */}
       <div className="lg:hidden z-40 flex border-t border-zinc-900 bg-[#060608] h-12 shrink-0">
         <button 
           onClick={() => {

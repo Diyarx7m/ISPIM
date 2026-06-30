@@ -12,20 +12,20 @@ export interface GroupMetadata {
 
 export interface IndigenousGroup {
   id: string;
-  family_id: string; // The parent linguistic or ethnic family (e.g., 'uralic', 'niger_congo', 'caucasus', 'austronesian')
-  familyName: string; // User-friendly family name
+  family_id: string;
+  familyName: string;
   name: string;
   region: 'Americas' | 'Asia' | 'Europe' | 'Africa' | 'Oceania';
   location: GeoLocation;
   category: 'Indigenous' | 'Stateless' | 'Isolated';
   population_count: number;
-  color_hex: string; // Specified regional base color
-  gradient_specs: string; // Unique linear gradient string for the tribe
+  color_hex: string;
+  gradient_specs: string;
   metadata: GroupMetadata;
 }
 
 export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
-  // --- URALIC / ARCTIC KINSHIP ---
+
   {
     id: "sami",
     family_id: "uralic",
@@ -103,7 +103,7 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
     family_id: "uralic",
     familyName: "Uralic Arctic Family",
     name: "Koryaks",
-    region: "Europe", // Geopolitically annotated as Russia region
+    region: "Europe",
     category: "Indigenous",
     location: { latitude: 60.0, longitude: 165.0 },
     population_count: 8000,
@@ -117,7 +117,6 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
     }
   },
 
-  // --- SUB-SAHARAN AFRICA / NIGER-CONGO (WEST AFRICA) ---
   {
     id: "pulaar",
     family_id: "niger_congo",
@@ -209,7 +208,6 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
     }
   },
 
-  // --- SUB-SAHARAN NIGER-CONGO (BENIN / GULF OF GUINEA) ---
   {
     id: "otamari",
     family_id: "niger_congo_benin",
@@ -391,7 +389,6 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
     }
   },
 
-  // --- AMERICAS ---
   {
     id: "inuit",
     family_id: "americas_indigenous",
@@ -483,7 +480,6 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
     }
   },
 
-  // --- OCEANIA ---
   {
     id: "maori",
     family_id: "austronesian_oceania",
@@ -580,7 +576,7 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
     familyName: "Austronesian & Pacific Family",
     name: "Kiribati People",
     region: "Oceania",
-    category: "Stateless", // Tagged proactively as climate-stateless refugee risk
+    category: "Stateless",
     location: { latitude: 1.3, longitude: 173.0 },
     population_count: 120000,
     color_hex: "#660099",
@@ -593,7 +589,6 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
     }
   },
 
-  // --- ASIA / SIBERIA ---
   {
     id: "ainu",
     family_id: "asia_east",
@@ -649,7 +644,6 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
     }
   },
 
-  // --- MIDDLE EAST & CAUCASUS ---
   {
     id: "kurds",
     family_id: "middle_east_caucasus",
@@ -723,14 +717,13 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
     }
   },
 
-  // --- CHINA & CENTRAL ASIA (ASIAN HIGHLANDS) ---
   {
     id: "uighur",
     family_id: "himalayan_highlands",
     familyName: "East Asian Highlands Family",
     name: "Uyghur",
     region: "Asia",
-    category: "Stateless", // Metaphorically/Proactively annotated for stateless containment risk
+    category: "Stateless",
     location: { latitude: 41.0, longitude: 84.0 },
     population_count: 12000000,
     color_hex: "#006666",
@@ -815,7 +808,6 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
     }
   },
 
-  // --- ADDITIONAL EXTRACTED GROUPS (NIGERIA DEEP DATA) ---
   {
     id: "hausa_fulani",
     family_id: "niger_congo_nigeria",
@@ -871,7 +863,6 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
     }
   },
 
-  // --- REPUBLICS & STEPPES (TURKIC KINSHIP) ---
   {
     id: "kazakhs",
     family_id: "turkic_steppe",
@@ -909,7 +900,6 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
     }
   },
 
-  // --- SOUTH ASIA & INDIAN OCEAN ---
   {
     id: "adivasi",
     family_id: "south_asia_indigenous",
@@ -1666,7 +1656,7 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
       population_projection_2026: "515,000 (Battling active climate desalination of the marshes)"
     }
   },
-  // --- ADDITIONAL CELTIC FAMILY ---
+
   {
     id: "welsh",
     family_id: "indo_european_celtic",
@@ -1757,7 +1747,7 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
       population_projection_2026: "59,000 (Consolidating island cooperative farming clusters)"
     }
   },
-  // --- GERMANIC FAMILY ---
+
   {
     id: "faroese",
     family_id: "indo_european_germanic",
@@ -1794,7 +1784,7 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
       population_projection_2026: "648,000 (Battling industrial erosion of coastal biosphere reserves)"
     }
   },
-  // --- ROMANCE FAMILY ---
+
   {
     id: "ladins",
     family_id: "indo_european_romance",
@@ -1867,7 +1857,7 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
       population_projection_2026: "592,000 (Strong regional publisher and identity preservation networks)"
     }
   },
-  // --- ALBANIAN ISOLATE ---
+
   {
     id: "arbereshe",
     family_id: "indo_european_albanian",
@@ -1886,7 +1876,7 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
       population_projection_2026: "9,600 (Digitally cataloging archaic Tosk linguistic variants)"
     }
   },
-  // --- SLAVIC FAMILY ---
+
   {
     id: "sorbs",
     family_id: "indo_european_slavic",
@@ -1977,7 +1967,7 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
       population_projection_2026: "790,000 (High-density regional publication and publishing)"
     }
   },
-  // --- URALIC FINNIC ---
+
   {
     id: "karelians",
     family_id: "uralic_finnic",
@@ -1996,7 +1986,7 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
       population_projection_2026: "56,000 (Active folk music school programs)"
     }
   },
-  // --- SINO-TIBETAN ---
+
   {
     id: "sherpa",
     family_id: "sino_tibetan",
@@ -2015,7 +2005,7 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
       population_projection_2026: "155,000 (Integrating mountaineering unions with park ecology commissions)"
     }
   },
-  // --- ISOLATED & PEAK ---
+
   {
     id: "sentinelese",
     family_id: "andamanese_isolate",
@@ -2034,7 +2024,7 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
       population_projection_2026: "80 (Assuredly stable within isolated borders)"
     }
   },
-  // --- AMERICAS MACRO-GE ---
+
   {
     id: "kayapo",
     family_id: "macro_ge_family",
@@ -2125,7 +2115,7 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
       population_projection_2026: "18,600 (Highly mobilized for Tekoha recovery)"
     }
   },
-  // --- AUSTRONESIAN PACIFIC DIRECTS ---
+
   {
     id: "kanaka_maoli",
     family_id: "austronesian_oceania",
@@ -2198,7 +2188,7 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
       population_projection_2026: "27,200 (Thriving under ancient tech-free agreements)"
     }
   },
-  // --- INDO-IRANIAN ISOLATES ---
+
   {
     id: "kalash",
     family_id: "indo_iranian_isolate",
@@ -2217,7 +2207,7 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
       population_projection_2026: "4,150 (Preserving local courts and valley festivals)"
     }
   },
-  // --- STATELESS MIDDLE EAST ---
+
   {
     id: "bedoon",
     family_id: "mesopotamian_arabic",
@@ -2272,7 +2262,7 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
       population_projection_2026: "295,000 (Mobilizing for baseline birth certificates)"
     }
   },
-  // --- MONGOLIC / CHUKOTKO ---
+
   {
     id: "daur",
     family_id: "mongolic_family",
@@ -2296,7 +2286,7 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
     family_id: "chukotko_kamchatkan",
     familyName: "Chukotko-Kamchatkan Family",
     name: "Chukchi",
-    region: "Asia", // Geographically Russian Arctic
+    region: "Asia",
     category: "Indigenous",
     location: { latitude: 66.0, longitude: 172.0 },
     population_count: 16000,
@@ -2309,7 +2299,7 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
       population_projection_2026: "16,400 (Highly impacted by industrial maritime routes)"
     }
   },
-  // --- WEST / CENTRAL AFRICANS ---
+
   {
     id: "ogoni",
     family_id: "niger_congo",
@@ -2346,7 +2336,7 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
       population_projection_2026: "720,000 (Continuous civil campaigns for regional sovereignty)"
     }
   },
-  // --- ALTIC ISolatedS ---
+
   {
     id: "aynu_xinjiang",
     family_id: "tai_kadai",
@@ -2365,7 +2355,7 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
       population_projection_2026: "15,300 (Isolated desert guild core stable)"
     }
   },
-  // --- CUSHITIC AFROASIATIC ---
+
   {
     id: "oromo",
     family_id: "cushitic_afroasiatic",
@@ -2384,7 +2374,7 @@ export const INDIGENOUS_GROUPS: IndigenousGroup[] = [
       population_projection_2026: "41,500,000 (Active activation of Gadaa local legal courts)"
     }
   },
-  // --- SUB-ARCTIC ATHABASKAN ---
+
   {
     id: "dene",
     family_id: "athabaskan_dene",
