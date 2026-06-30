@@ -11,7 +11,6 @@ async function startServer() {
   app.use(express.json());
   const PORT = 3000;
 
-  // Initialize Gemini AI client dynamically
   const getAiClient = () => {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey.trim() === "") {
@@ -27,7 +26,6 @@ async function startServer() {
     });
   };
 
-  // API Route for Gemini content generation
   app.post("/api/gemini/generate", async (req, res) => {
     try {
       const { prompt, contextGroup, isGroupSpecific, customPrompt } = req.body;
@@ -42,7 +40,6 @@ async function startServer() {
         throw keyError;
       }
 
-      // Use recommended gemini-3.5-flash for standard text tasks
       const modelName = "gemini-3.5-flash";
       let composedPrompt = prompt;
 
@@ -79,7 +76,6 @@ Use the database of our mapped peoples (including the Sámi, Nenets, Pulaar, Jol
     }
   });
 
-  // Hot middleware integration in development or static serving
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
